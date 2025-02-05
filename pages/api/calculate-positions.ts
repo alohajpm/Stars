@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import moment from 'moment-timezone';
-import fs from 'fs';
-import path from 'path';
+import fs from 'fs'; // Import fs
+import path from 'path'; // Import path
 import * as Astronomy from 'astronomy-engine';
 
 // --- Type Definitions ---
@@ -329,9 +329,13 @@ function calculateChartPositions(
         throw error;
     }
 }
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     console.log('API route /api/calculate-positions started');
+
+    if (req.method !== 'POST'){
+        res.setHeader('Allow', ['POST']);
+        return res.status(405).end(`Method ${req.method} Not Allowed`);
+    }
 
     try {
         const body = req.body;
