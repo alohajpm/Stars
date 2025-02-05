@@ -1,101 +1,258 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+import { useState } from "react";
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+interface ChartData {
+  summary: string;
+  details: Record<string, string>;
+  calculated_positions?: {
+    [key: string]: {
+      sign: string;
+      degree: number;
+      minutes: number;
+    };
+  };
+}
+
+const HomePage = () => {
+  const [birthDate, setBirthDate] = useState("");
+  const [birthTime, setBirthTime] = useState("");
+  const [place, setPlace] = useState("");
+  const [chartData, setChartData] = useState<ChartData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>("");
+  const [chartImage, setChartImage] = useState<string | null>(null); // State for the chart image
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      console.log('Submitting form with data:', { birthDate, birthTime, place });
+
+      const res = await fetch("/api/chart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ birthDate, birthTime, place }),
+      });
+
+      const data = await res.json();
+      console.log('Received response:', data);
+
+      if (!res.ok) {
+        throw new Error(data.error || data.details || "Failed to fetch chart data");
+      }
+
+      setChartData(data);
+    } catch (error) {
+      console.error("Error fetching chart:", error);
+      setError(error instanceof Error ? error.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGenerateChart = async () => {
+    if (!chartData || !chartData.calculated_positions) {
+      setError("Please generate the chart data first.");
+      return;
+    }
+  
+    try {
+      const res = await fetch("/api/generate-chart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ positions: chartData.calculated_positions }),
+      });
+  
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || errorData.details || "Failed to generate chart image");
+      }
+  
+      const data = await res.json();
+      setChartImage(data.image);
+    } catch (error) {
+      console.error("Error generating chart image:", error);
+      setError(error instanceof Error ? error.message : "An error occurred while generating the chart image");
+    }
+  };
+
+  const ExpandableSection = ({ title, content }: { title: string; content: string }) => {
+    const [expanded, setExpanded] = useState(false);
+
+    return (
+      <div className="mb-4 border rounded-lg overflow-hidden bg-white/95">
+        <div
+          className="flex justify-between items-center p-4 bg-purple-50 cursor-pointer hover:bg-blue-100 transition-colors"
+          onClick={() => setExpanded(!expanded)}
+        >
+          <h3 className="text-lg font-semibold text-blue-900">{title}</h3>
+          <span className="text-2xl text-blue-700">{expanded ? "−" : "+"}</span>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        {expanded && (
+          <div className="p-4 bg-white">
+            <p className="text-gray-700 leading-relaxed">{content}</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const AstrologyBackground = () => (
+    <div className="fixed inset-0 z-[-1]">
+      <div className="absolute inset-0" />
+      <div
+        className="absolute inset-0 opacity-40 bg-cover bg-center"
+        style={{
+          backgroundImage: "url('/nebula.jpg')",
+          backgroundBlendMode: "screen",
+        }}
+      />
     </div>
   );
-}
+
+  if (chartData) {
+    return (
+      <div className="max-w-4xl mx-auto p-8">
+        <AstrologyBackground />
+        <div className="bg-white/95 backdrop-blur-sm shadow-xl rounded-lg">
+          <div className="p-8">
+            <h1 className="text-3xl font-serif text-center mb-6 text-blue-900">
+              Your Astrological Chart
+            </h1>
+            <p className="text-xl text-center mb-8 text-gray-800 leading-relaxed">
+              {chartData.summary}
+            </p>
+            <div className="space-y-4">
+              {Object.entries(chartData.details).map(([section, info]) => (
+                <ExpandableSection key={section} title={section} content={info} />
+              ))}
+            </div>
+            <button
+              onClick={handleGenerateChart}
+              className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-purple-700 transition-colors mx-auto block"
+            >
+              Generate Natal Chart
+            </button>
+
+            {/* Display the chart image if available */}
+            {chartImage && (
+              <div className="mt-8">
+                <img src={chartImage} alt="Natal Chart" className="mx-auto" />
+              </div>
+            )}
+
+            <button
+              onClick={() => {
+                setChartData(null);
+                setError("");
+                setChartImage(null); // Also reset the chart image
+              }}
+              className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-purple-700 transition-colors mx-auto block"
+            >
+              ← Start Over
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen py-12 px-4">
+      <AstrologyBackground />
+      <div className="max-w-xl mx-auto">
+        <div className="bg-white/90 backdrop-blur-sm shadow-xl rounded-lg">
+          <div className="p-8">
+            <h1 className="text-3xl font-serif text-center mb-8 text-blue-900">
+              Discover Your Astrological Chart
+            </h1>
+            {error && (
+              <div className="p-4 mb-6 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700">{error}</p>
+                {process.env.NODE_ENV === 'development' && (
+                  <p className="text-sm text-red-500 mt-2">
+                    Developer: Check console for more details
+                  </p>
+                )}
+              </div>
+            )}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <label
+                  htmlFor="birthDate"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Birth Date
+                </label>
+                <input
+                  type="date"
+                  id="birthDate"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="birthTime"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Birth Time
+                </label>
+                <input
+                  type="time"
+                  id="birthTime"
+                  value={birthTime}
+                  onChange={(e) => setBirthTime(e.target.value)}
+                  required
+                  style={{ colorScheme: 'light' }}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="place"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Place of Birth
+                </label>
+                <input
+                  type="text"
+                  id="place"
+                  placeholder="City, State"
+                  value={place}
+                  onChange={(e) => setPlace(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {loading ? (
+                  <>
+                    <span className="animate-spin mr-2">⭐</span>
+                    Creating Your Chart...
+                  </>
+                ) : (
+                  "Get My Chart"
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default HomePage;

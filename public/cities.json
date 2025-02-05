@@ -1,0 +1,140 @@
+[
+  {
+    "name": "New York",
+    "state_code": "NY",
+    "lat": "40.7128",
+    "lng": "-74.0060"
+  },
+  {
+    "name": "Los Angeles",
+    "state_code": "CA",
+    "lat": "34.0522",
+    "lng": "-118.2437"
+  },
+  {
+    "name": "Chicago",
+    "state_code": "IL",
+    "lat": "41.8781",
+    "lng": "-87.6298"
+  },
+  {
+    "name": "London",
+    "state_code": "UK",
+    "lat": "51.5074",
+    "lng": "-0.1278"
+  },
+  {
+    "name": "Paris",
+    "state_code": "FR",
+    "lat": "48.8566",
+    "lng": "2.3522"
+  },
+  {
+    "name": "Tokyo",
+    "state_code": "JP",
+    "lat": "35.6895",
+    "lng": "139.6917"
+  },
+  {
+    "name": "Sydney",
+    "state_code": "AU",
+    "lat": "-33.8688",
+    "lng": "151.2093"
+  },
+  {
+    "name": "Rio de Janeiro",
+    "state_code": "BR",
+    "lat": "-22.9068",
+    "lng": "-43.1729"
+  },
+  {
+    "name": "Moscow",
+    "state_code": "RU",
+    "lat": "55.7558",
+    "lng": "37.6173"
+  },
+  {
+    "name": "Cairo",
+    "state_code": "EG",
+    "lat": "30.0444",
+    "lng": "31.2357"
+  },
+  {
+    "name": "Mumbai",
+    "state_code": "IN",
+    "lat": "19.0760",
+    "lng": "72.8777"
+  },
+  {
+    "name": "Beijing",
+    "state_code": "CN",
+    "lat": "39.9042",
+    "lng": "116.4074"
+  },
+  {
+    "name": "Mexico City",
+    "state_code": "MX",
+    "lat": "19.4326",
+    "lng": "-99.1332"
+  },
+  {
+    "name": "Cape Town",
+    "state_code": "ZA",
+    "lat": "-33.9249",
+    "lng": "18.4241"
+  },
+  {
+    "name": "Toronto",
+    "state_code": "CA",
+    "lat": "43.6532",
+    "lng": "-79.3832"
+  },
+  {
+    "name": "Dubai",
+    "state_code": "AE",
+    "lat": "25.2048",
+    "lng": "55.2708"
+  },
+  {
+    "name": "Hong Kong",
+    "state_code": "CN",
+    "lat": "22.3193",
+    "lng": "114.1694"
+  },
+  {
+    "name": "Singapore",
+    "state_code": "SG",
+    "lat": "1.3521",
+    "lng": "103.8198"
+  },
+  {
+    "name": "Auckland",
+    "state_code": "NZ",
+    "lat": "-36.8485",
+    "lng": "174.7633"
+  },
+  {
+    "name": "Sacramento",
+    "state_code": "CA",
+    "lat": "38.5816",
+    "lng": "-121.4944"
+  },
+  {
+    "name": "Modesto",
+    "state_code": "CA",
+    "lat": "37.6388",
+    "lng": "-120.9947"
+  },
+  {
+    "name": "San Diego",
+    "state_code": "CA",
+    "lat": "32.7157",
+    "lng": "-117.1611"
+  },
+  {
+    "name": "Wichita Falls",
+    "state_code": "TX",
+    "lat": "33.9137",
+    "lng": "-98.4934"
+  }
+]
