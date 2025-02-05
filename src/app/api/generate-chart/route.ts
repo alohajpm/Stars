@@ -1,3 +1,4 @@
+// /src/app/api/generate-chart/route.ts
 import { NextResponse } from 'next/server';
 import { createCanvas, CanvasRenderingContext2D } from 'canvas';
 
@@ -81,6 +82,7 @@ const zodiacSymbols: { [key: string]: string } = {
     'Pisces': '♓',
 };
 
+// Corrected: Named export, not default.
 export async function POST(request: Request) {
     try {
         const body = await request.json();
@@ -186,7 +188,7 @@ export async function POST(request: Request) {
 
         // Convert canvas to base64 image
         const imageDataUrl = canvas.toDataURL('image/png');
-        
+
         return NextResponse.json({ image: imageDataUrl });
 
     } catch (error) {
@@ -196,7 +198,6 @@ export async function POST(request: Request) {
                 error: 'Failed to generate chart image',
                 details: error instanceof Error ? error.message : 'Unknown error'
             },
-            { status: 500 }
-        );
+            { status: 5);
     }
 }
