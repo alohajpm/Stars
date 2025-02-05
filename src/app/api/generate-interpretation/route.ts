@@ -5,7 +5,7 @@ export const config = {
     maxDuration: 300, // Set maximum duration to 5 minutes
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export async function POST(request: Request) { ... }
     console.log('API route /api/generate-interpretation started');
 
     if (!process.env.ANTHROPIC_API_KEY) {
