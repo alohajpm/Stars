@@ -135,7 +135,7 @@ const HomePage = () => {
         const [expanded, setExpanded] = useState(false);
 
         return (
-            <div className="mb-4 border rounded-lg overflow-hidden">
+            <div className="mb-4 border rounded-lg overflow-hidden bg-white/95">
                 <div
                     className="flex justify-between items-center p-4 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors"
                     onClick={() => setExpanded(!expanded)}
@@ -149,7 +149,7 @@ const HomePage = () => {
                 </div>
                 {expanded && (
                     // Add the class here:
-                    <div className="p-4 expandable-section-content">
+                    <div className="p-4 bg-white expandable-section-content">
                         <p className="body-text leading-relaxed">
                             {content}
                         </p>
@@ -178,10 +178,10 @@ const HomePage = () => {
                 <AstrologyBackground />
                 <div className="bg-white/95 backdrop-blur-sm shadow-xl rounded-lg">
                     <div className="p-8">
-                        <h1 className="text-3xl text-center mb-6 text-blue-900 heading">
+                        <h1 className="heading text-3xl text-center mb-6 text-blue-900">
                             Your Astrological Chart
                         </h1>
-                        <p className="text-xl text-center mb-8 text-gray-800 leading-relaxed body-text">
+                        <p className="summary-text">
                             {chartData.summary}
                         </p>
                         <div className="space-y-4">
