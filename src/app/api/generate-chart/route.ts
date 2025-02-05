@@ -198,6 +198,7 @@ export async function POST(request: Request) {
                 error: 'Failed to generate chart image',
                 details: error instanceof Error ? error.message : 'Unknown error'
             },
-            { status: 5);
+            { status: 500 } // Corrected: Use 500 for the status code.
+        );
     }
 }
