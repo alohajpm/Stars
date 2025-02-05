@@ -198,7 +198,9 @@ function calculateChartPositions(date: string, time: string, place: string) {
     }
 }
 
-export async function POST(request: Request) {
+// Change this line:
+// export async function POST(request: Request) {
+export default async function handler(request: Request) {
     console.log('Request Method:', request.method);
     if (request.method !== 'POST') {
         return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
