@@ -1,7 +1,7 @@
+// pages/api/generate-chart.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createCanvas } from 'canvas';
 import * as Astronomy from 'astronomy-engine';
-import cities from '../../public/cities.json';
 
 function calculateChartPositions(date: string, time: string, place: string) {
   try {
