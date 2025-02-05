@@ -31,6 +31,6 @@ h2, h3, .subheading { /* Use a class for consistent subheadings */
 }
 
 p, .body-text { /* Use a class for body text */
-    font-family: var(--font-lora);
+    font-family: var(--font-Lora-VariableFont_wght);
     /* Other styles for body text */
 }
