@@ -2,7 +2,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import Anthropic from '@anthropic-ai/sdk';
 
-export async function POST(request: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) { // Use NextApiRequest and NextApiResponse
     console.log('API route /api/generate-interpretation started');
 
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -10,15 +10,18 @@ export async function POST(request: NextApiRequest, res: NextApiResponse) {
         return res.status(500).json({ error: 'Server configuration error - missing API key' });
     }
 
+    if (req.method !== 'POST') {
+        res.setHeader('Allow', ['POST']);
+        return res.status(405).end(`Method ${req.method} Not Allowed`);
+    }
+
     try {
-        const body = await request.json();
-        const { positions } = body; // Receive pre-calculated positions
+        // Use req.body directly.  Next.js parses it for you.
+        const { positions } = req.body;
 
         if (!positions) {
             console.error('Missing required fields: positions');
-             return res.status(400).json(
-               { error: 'Missing required fields: positions' },
-             );
+            return res.status(400).json({ error: 'Missing required fields: positions' });
         }
 
         console.log('Received positions:', positions);
