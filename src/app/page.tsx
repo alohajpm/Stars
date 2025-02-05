@@ -5,7 +5,7 @@ import { useState } from "react";
 interface ChartData {
   summary: string;
   details: Record<string, string>;
-  calculated_positions?: {
+  calculated_positions?: {  // This is now optional, as it's passed separately
     [key: string]: {
       sign: string;
       degree: number;
@@ -27,24 +27,45 @@ const HomePage = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setChartData(null); // Clear previous chart data
+    setChartImage(null); //Clear previous image
 
     try {
       console.log('Submitting form with data:', { birthDate, birthTime, place });
 
-      const res = await fetch("/api/chart", {
+      // 1. Calculate Positions (First API Call)
+      const positionsRes = await fetch("/api/calculate-positions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ birthDate, birthTime, place }),
       });
 
-      const data = await res.json();
-      console.log('Received response:', data);
-
-      if (!res.ok) {
-        throw new Error(data.error || data.details || "Failed to fetch chart data");
+      if (!positionsRes.ok) {
+        const errorData = await positionsRes.json();
+        throw new Error(errorData.error || errorData.details || "Failed to calculate positions");
       }
 
-      setChartData(data);
+      const positions = await positionsRes.json();
+      console.log('Received positions:', positions);
+
+
+      // 2. Generate Interpretation (Second API Call)
+      const interpretationRes = await fetch("/api/generate-interpretation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ positions }), // Send calculated positions
+      });
+
+      if (!interpretationRes.ok) {
+          const errorData = await interpretationRes.json();
+          throw new Error(errorData.error || errorData.details || "Failed to fetch chart data");
+      }
+
+      const interpretationData = await interpretationRes.json();
+      console.log('Received interpretation:', interpretationData);
+      setChartData(interpretationData);
+
+
     } catch (error) {
       console.error("Error fetching chart:", error);
       setError(error instanceof Error ? error.message : "An error occurred");
@@ -53,7 +74,7 @@ const HomePage = () => {
     }
   };
 
-  const handleGenerateChart = async () => {
+    const handleGenerateChart = async () => {
     if (!chartData || !chartData.calculated_positions) {
       setError("Please generate the chart data first.");
       return;
@@ -85,11 +106,11 @@ const HomePage = () => {
     return (
       <div className="mb-4 border rounded-lg overflow-hidden bg-white/95">
         <div
-          className="flex justify-between items-center p-4 bg-purple-50 cursor-pointer hover:bg-blue-100 transition-colors"
+          className="flex justify-between items-center p-4 bg-purple-50 cursor-pointer hover:bg-purple-100 transition-colors"
           onClick={() => setExpanded(!expanded)}
         >
-          <h3 className="text-lg font-semibold text-blue-900">{title}</h3>
-          <span className="text-2xl text-blue-700">{expanded ? "−" : "+"}</span>
+          <h3 className="text-lg font-semibold text-purple-900">{title}</h3>
+          <span className="text-2xl text-purple-700">{expanded ? "−" : "+"}</span>
         </div>
         {expanded && (
           <div className="p-4 bg-white">
@@ -102,11 +123,11 @@ const HomePage = () => {
 
   const AstrologyBackground = () => (
     <div className="fixed inset-0 z-[-1]">
-      <div className="absolute inset-0" />
+      <div className="absolute inset-0 bg-gradient-to-b from-indigo-900 via-purple-900 to-black" />
       <div
         className="absolute inset-0 opacity-40 bg-cover bg-center"
         style={{
-          backgroundImage: "url('https://onlysnails.com/wp-content/uploads/2025/02/nebula.jpg')",
+          backgroundImage: "url('/stars-bg.jpg')", // Correct path
           backgroundBlendMode: "screen",
         }}
       />
@@ -119,7 +140,7 @@ const HomePage = () => {
         <AstrologyBackground />
         <div className="bg-white/95 backdrop-blur-sm shadow-xl rounded-lg">
           <div className="p-8">
-            <h1 className="text-3xl font-serif text-center mb-6 text-blue-900">
+            <h1 className="text-3xl font-serif text-center mb-6 text-purple-900">
               Your Astrological Chart
             </h1>
             <p className="text-xl text-center mb-8 text-gray-800 leading-relaxed">
@@ -132,7 +153,7 @@ const HomePage = () => {
             </div>
             <button
               onClick={handleGenerateChart}
-              className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-purple-700 transition-colors mx-auto block"
+              className="mt-8 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors mx-auto block"
             >
               Generate Natal Chart
             </button>
@@ -150,7 +171,7 @@ const HomePage = () => {
                 setError("");
                 setChartImage(null); // Also reset the chart image
               }}
-              className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-purple-700 transition-colors mx-auto block"
+              className="mt-8 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors mx-auto block"
             >
               ← Start Over
             </button>
@@ -166,7 +187,7 @@ const HomePage = () => {
       <div className="max-w-xl mx-auto">
         <div className="bg-white/90 backdrop-blur-sm shadow-xl rounded-lg">
           <div className="p-8">
-            <h1 className="text-3xl font-serif text-center mb-8 text-blue-900">
+            <h1 className="text-3xl font-serif text-center mb-8 text-purple-900">
               Discover Your Astrological Chart
             </h1>
             {error && (
@@ -193,7 +214,7 @@ const HomePage = () => {
                   value={birthDate}
                   onChange={(e) => setBirthDate(e.target.value)}
                   required
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900"
                 />
               </div>
 
@@ -211,7 +232,7 @@ const HomePage = () => {
                   onChange={(e) => setBirthTime(e.target.value)}
                   required
                   style={{ colorScheme: 'light' }}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900"
                 />
               </div>
 
@@ -229,14 +250,14 @@ const HomePage = () => {
                   value={place}
                   onChange={(e) => setPlace(e.target.value)}
                   required
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {loading ? (
                   <>
