@@ -122,32 +122,32 @@ const HomePage = () => {
 
     // Corrected ExpandableSection:  Simpler and uses string for content
     const ExpandableSection = ({ title, content }: { title: React.ReactNode; content: string }) => {
-        const [expanded, setExpanded] = useState(false);
+    const [expanded, setExpanded] = useState(false);
 
-        return (
-            <div className="mb-4 border rounded-lg overflow-hidden bg-white/95">
-                <div
-                    className="flex justify-between items-center p-4 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors"
-                    onClick={() => setExpanded(!expanded)}
-                >
-                    <h3 className="text-lg font-semibold text-blue-900 subheading">
-                        {title}
-                    </h3>
-                    <span className="text-2xl text-blue-700">
-                        {expanded ? '−' : '+'}
-                    </span>
-                </div>
-                {expanded && (
-                    <div className="p-4 bg-white">
-                        {/*  Apply body-text class directly to the <p> tag */}
-                        <p className="body-text leading-relaxed">
-                            {content}
-                        </p>
-                    </div>
-                )}
+    return (
+        <div className="mb-4 border rounded-lg overflow-hidden bg-white/95">
+            <div
+                className="flex justify-between items-center p-4 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors"
+                onClick={() => setExpanded(!expanded)}
+            >
+                <h3 className="text-lg font-semibold text-blue-900 subheading">
+                    {title}
+                </h3>
+                <span className="text-2xl text-blue-700">
+                    {expanded ? '−' : '+'}
+                </span>
             </div>
-        );
-    };
+            {expanded && (
+                // Add the class to the container div:
+                <div className="p-4 bg-white expandable-section-content">
+                    <p className="body-text leading-relaxed">
+                        {content}
+                    </p>
+                </div>
+            )}
+        </div>
+    );
+};
 
     const AstrologyBackground = () => (
         <div className="fixed inset-0 z-[-1]">
