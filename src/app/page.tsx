@@ -106,7 +106,7 @@ const HomePage = () => {
       <div
         className="absolute inset-0 opacity-40 bg-cover bg-center"
         style={{
-          backgroundImage: "url('/nebula.jpg')",
+          backgroundImage: "url('https://onlysnails.com/wp-content/uploads/2025/02/nebula.jpg')",
           backgroundBlendMode: "screen",
         }}
       />
