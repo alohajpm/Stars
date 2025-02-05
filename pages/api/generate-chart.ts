@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { createCanvas, CanvasRenderingContext2D } from 'canvas';
 import * as Astronomy from 'astronomy-engine';
 import moment from 'moment-timezone';
-import cities from '../../public/cities.json'; // Import cities.json
+import cities from './cities.json';
 
 // Define a type for the city data to ensure consistency
 type CityData = {
