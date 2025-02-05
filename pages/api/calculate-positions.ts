@@ -1,3 +1,4 @@
+// /pages/api/calculate-positions.ts
 import { NextResponse } from 'next/server';
 import moment from 'moment-timezone';
 import fs from 'fs';
@@ -23,13 +24,13 @@ type CityData = {
 const publicDir = path.join(process.cwd(), 'public');
 const citiesFilePath = path.join(publicDir, 'cities.json');
 
-let cities: CityData[];
+let cities: CityData[] = [];
 try {
     const citiesData = fs.readFileSync(citiesFilePath, 'utf8');
     cities = JSON.parse(citiesData);
 } catch (error) {
     console.error('Error loading cities data:', error);
-    cities = [];
+    cities = []; // Initialize as an empty array
 }
 
 const stateTimezones: { [key: string]: string } = {
@@ -76,7 +77,7 @@ const stateTimezones: { [key: string]: string } = {
     'SC': 'America/New_York',
     'SD': 'America/Chicago',
     'TN': 'America/Chicago',
-    'TX': 'America/Chicago',
+    'TX': 'America/Chicago', // Added Texas
     'UT': 'America/Denver',
     'VA': 'America/New_York',
     'VT': 'America/New_York',
@@ -88,8 +89,8 @@ const stateTimezones: { [key: string]: string } = {
 
 function getZodiacPosition(longitude: number) {
     const signs = [
-        "Aries", "Taurus", "Gemini", "Cancer", 
-        "Leo", "Virgo", "Libra", "Scorpio", 
+        "Aries", "Taurus", "Gemini", "Cancer",
+        "Leo", "Virgo", "Libra", "Scorpio",
         "Sagittarius", "Capricorn", "Aquarius", "Pisces"
     ];
     const signIndex = Math.floor(longitude / 30) % 12;
@@ -104,8 +105,12 @@ function calculateChartPositions(date: string, time: string, place: string) {
         const [city, state] = place.split(',').map(s => s.trim());
         console.log('Parsing location:', { city, state });
 
-        const cityData = cities.find(c => 
-            c.name.toLowerCase() === city.toLowerCase() && 
+        if (!cities || cities.length === 0) {
+            throw new Error('Cities data not loaded.');
+        }
+
+        const cityData = cities.find(c =>
+            c.name.toLowerCase() === city.toLowerCase() &&
             c.state_code === state.toUpperCase()
         );
 
@@ -118,7 +123,8 @@ function calculateChartPositions(date: string, time: string, place: string) {
             lng: parseFloat(cityData.lng)
         };
 
-        const timezone = stateTimezones[state];
+
+        const timezone = stateTimezones[state.toUpperCase()]; // Consistent uppercase
         if (!timezone) {
             throw new Error(`Unknown timezone for state: ${state}`);
         }
@@ -135,7 +141,7 @@ function calculateChartPositions(date: string, time: string, place: string) {
 
         // Calculate house cusps first as they're faster
         const sidereal = Astronomy.SiderealTime(date_obj);
-        const ascendantLongitude = ((sidereal + coordinates.lng/15) * 15 + 180) % 360;
+        const ascendantLongitude = ((sidereal + coordinates.lng / 15) * 15 + 180) % 360;
         positions.Ascendant = getZodiacPosition(ascendantLongitude);
 
         positions.Houses = Array(12).fill(0).map((_, i) => {
@@ -186,13 +192,20 @@ function calculateChartPositions(date: string, time: string, place: string) {
 
     } catch (error) {
         console.error('Error in calculateChartPositions:', error);
-        throw error;
+        throw error; // Re-throw the error to be caught by the caller.
     }
 }
 
 export async function POST(request: Request) {
+
+    console.log('Request Method:', request.method);
+    if (request.method !== 'POST') {
+        return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
+    }
+
     try {
         const body = await request.json();
+        console.log("Request Body:", body);
         const { birthDate, birthTime, place } = body;
 
         if (!birthDate || !birthTime || !place) {
@@ -208,7 +221,7 @@ export async function POST(request: Request) {
     } catch (error) {
         console.error('API Error:', error);
         return NextResponse.json(
-            { 
+            {
                 error: 'Failed to calculate chart positions',
                 details: error instanceof Error ? error.message : 'Unknown error'
             },
