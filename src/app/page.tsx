@@ -230,7 +230,7 @@ const HomePage = () => {
             <div className="max-w-xl mx-auto">
                 <div className="bg-white/90 backdrop-blur-sm shadow-xl rounded-lg">
                     <div className="p-8">
-                        <h1 className="text-3xl font-serif text-center mb-8 text-blue-900">
+                        <h1 className="text-3xl font-serif text-center mb-8 text-blue-900" style={{fontFamily: "var(--font-GreatVibes-Regular)"}}>>
                             Discover Your Astrological Chart
                         </h1>
                         {error && (
