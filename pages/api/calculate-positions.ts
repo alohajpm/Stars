@@ -1,10 +1,17 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import moment from 'moment-timezone';
-import fs from 'fs'; // Import fs
-import path from 'path'; // Import path
+import fs from 'fs';
+import path from 'path';
 import * as Astronomy from 'astronomy-engine';
 
-// --- Type Definitions ---
+export const config = {
+    api: {
+        bodyParser: {
+            sizeLimit: '1mb',
+        },
+    },
+};
+
 type CityData = {
     name: string;
     state_code: string;
@@ -12,46 +19,19 @@ type CityData = {
     lng: string;
 };
 
-type StateTimezones = { [state: string]: string };
+const publicDir = path.join(process.cwd(), 'public');
+const citiesFilePath = path.join(publicDir, 'cities.json');
 
-type CityCoordinates = {
-    [cityState: string]: {
-        lat: number;
-        lng: number;
-    };
-};
+let cities: CityData[];
+try {
+    const citiesData = fs.readFileSync(citiesFilePath, 'utf8');
+    cities = JSON.parse(citiesData);
+} catch (error) {
+    console.error('Error loading cities data:', error);
+    cities = [];
+}
 
-type Planet = 'Sun' | 'Moon' | 'Ascendant' | 'Mercury' | 'Venus' | 'Mars' | 'Jupiter' | 'Saturn' | 'Uranus' | 'Neptune' | 'Pluto';
-
-type ZodiacPosition = {
-    sign: string;
-    degree: number;
-    minutes: number;
-};
-
-type House = {
-    house: number;
-    sign: string;
-    degree: number;
-    minutes: number;
-};
-
-type Aspect = {
-    planet1: string;
-    planet2: string;
-    aspect: string;
-    orb: string;
-};
-
-type ChartPositions = {
-    [key in Planet]?: ZodiacPosition;
-} & {
-    Houses?: House[];
-    Aspects?: Aspect[];
-};
-
-// --- Data ---
-const stateTimezones: StateTimezones = {
+const stateTimezones: { [key: string]: string } = {
     'AK': 'America/Anchorage',
     'AL': 'America/Chicago',
     'AR': 'America/Chicago',
@@ -105,141 +85,87 @@ const stateTimezones: StateTimezones = {
     'WY': 'America/Denver'
 };
 
-// --- Read cities data using fs.readFileSync (synchronously) ---
-const publicDir = path.join(process.cwd(), 'public'); // Path to public directory
-const citiesFilePath = path.join(publicDir, 'cities.json');
-const citiesData = fs.readFileSync(citiesFilePath, 'utf8');
-const cities = JSON.parse(citiesData); // Parse as JSON
-
-const cityCoordinates: CityCoordinates = (cities as CityData[]).reduce((acc: CityCoordinates, city: CityData) => {
-    const key = `${city.name.toUpperCase()}, ${city.state_code.toUpperCase()}`;
-    acc[key] = { lat: parseFloat(city.lat), lng: parseFloat(city.lng) };
-    return acc;
-}, {} as CityCoordinates);
-
-// --- Caching ---
-const zodiacPositionCache: { [key: number]: ZodiacPosition } = {};
-
-// --- Helper Function (Outside calculateChartPositions)---
-function getZodiacPosition(longitude: number): ZodiacPosition {
-    if (zodiacPositionCache[longitude]) {
-        return zodiacPositionCache[longitude];
-    }
-
+function getZodiacPosition(longitude: number) {
     const signs = [
         "Aries", "Taurus", "Gemini", "Cancer",
         "Leo", "Virgo", "Libra", "Scorpio",
         "Sagittarius", "Capricorn", "Aquarius", "Pisces"
     ];
-    const signIndex = Math.floor(longitude / 30);
+    const signIndex = Math.floor(longitude / 30) % 12;
     const degree = Math.floor(longitude % 30);
-    const minutes = Math.round((longitude % 1) * 60);
-
-    const zodiacPosition = { sign: signs[signIndex], degree, minutes };
-    zodiacPositionCache[longitude] = zodiacPosition;
-    return zodiacPosition;
+    const minutes = Math.floor((longitude % 1) * 60);
+    return { sign: signs[signIndex], degree, minutes };
 }
 
-// --- Main Calculation Function ---
-function calculateChartPositions(
-    date: string,
-    time: string,
-    place: string
-): ChartPositions {
-    console.time("calculateChartPositions"); // Start timer
+function calculateChartPositions(date: string, time: string, place: string) {
+    console.time("calculateChartPositions");
     try {
-        const [city, state] = place.split(',').map((s) => s.trim());
+        const [city, state] = place.split(',').map(s => s.trim());
         console.log('Parsing location:', { city, state });
 
-        const cityKey = `${city}, ${state}`.toUpperCase();
-        let coordinates = cityCoordinates[cityKey];
-        let timezone = stateTimezones[state];
+        // Find city data
+        const cityData = cities.find(c => 
+            c.name.toLowerCase() === city.toLowerCase() && 
+            c.state_code === state.toUpperCase()
+        );
 
-        if (!coordinates) {
-            const cityData = (cities as CityData[]).find(
-                (c) =>
-                    c.name.toLowerCase() === city.toLowerCase() &&
-                    c.state_code === state.toUpperCase()
-            );
-
-            if (cityData) {
-                coordinates = {
-                    lat: parseFloat(cityData.lat),
-                    lng: parseFloat(cityData.lng),
-                };
-            }
-        }
-
-        if (!coordinates) {
+        if (!cityData) {
             throw new Error(`City not found: ${city}, ${state}`);
         }
 
+        const coordinates = {
+            lat: parseFloat(cityData.lat),
+            lng: parseFloat(cityData.lng)
+        };
+
+        const timezone = stateTimezones[state];
         if (!timezone) {
-            console.error(`Unknown timezone for state: ${state}`);
-            timezone = 'UTC'; // Fallback to UTC
+            throw new Error(`Unknown timezone for state: ${state}`);
         }
 
         console.log('Using coordinates:', coordinates);
         console.log('Using timezone:', timezone);
 
         const datetime = moment.tz(`${date} ${time}`, timezone);
+        const date_obj = new Date(datetime.format());
+        
         console.log('Parsed datetime:', datetime.format());
 
-        const astroTime = new Astronomy.AstroTime(datetime.toDate());
         const observer = new Astronomy.Observer(
             coordinates.lat,
             coordinates.lng,
-            0
+            0 // elevation
         );
 
-        const sunEquator = Astronomy.Equator(
-            Astronomy.Body.Sun,
-            astroTime,
-            observer,
-            true,
-            true
-        );
-        const sunEcliptic = Astronomy.Ecliptic(sunEquator.vec);
-        const sunLongitude = sunEcliptic.elon;
-        console.timeLog("calculateChartPositions", "Sun position calculated");
+        // Calculate Sun position
+        const sun = Astronomy.GeoVector(Astronomy.Body.Sun, date_obj, observer);
+        const sunLongitude = Astronomy.EclipticLongitude(sun);
+        
+        // Calculate Moon position
+        const moon = Astronomy.GeoVector(Astronomy.Body.Moon, date_obj, observer);
+        const moonLongitude = Astronomy.EclipticLongitude(moon);
 
-        const moonEquator = Astronomy.Equator(
-            Astronomy.Body.Moon,
-            astroTime,
-            observer,
-            true,
-            true
-        );
-        const moonEcliptic = Astronomy.Ecliptic(moonEquator.vec);
-        const moonLongitude = moonEcliptic.elon;
-        console.timeLog("calculateChartPositions", "Moon position calculated");
+        // Calculate Ascendant
+        const siderealTime = Astronomy.SiderealTime(date_obj);
+        const ascendantLongitude = ((siderealTime + coordinates.lng/15) * 15 + 180) % 360;
 
-        const lst = Astronomy.SiderealTime(astroTime) + coordinates.lng / 15;
-        const ascendantLongitude = (lst * 15) % 360;
-
-        // Cache zodiac positions
-        const sunZodiac = getZodiacPosition(sunLongitude);
-        const moonZodiac = getZodiacPosition(moonLongitude);
-        const ascendantZodiac = getZodiacPosition(ascendantLongitude);
-
-        let positions: ChartPositions = {
-            Sun: sunZodiac,
-            Moon: moonZodiac,
-            Ascendant: ascendantZodiac,
+        const positions: any = {
+            Sun: getZodiacPosition(sunLongitude),
+            Moon: getZodiacPosition(moonLongitude),
+            Ascendant: getZodiacPosition(ascendantLongitude)
         };
 
-        positions.Houses = Array(12)
-            .fill(0)
-            .map((_, i) => {
-                const houseLongitude = (ascendantLongitude + i * 30) % 360;
-                return {
-                    house: i + 1,
-                    ...getZodiacPosition(houseLongitude),
-                };
-            });
-        console.timeLog("calculateChartPositions", "Houses calculated");
+        // Calculate houses
+        positions.Houses = Array(12).fill(0).map((_, i) => {
+            const houseLongitude = (ascendantLongitude + i * 30) % 360;
+            return {
+                house: i + 1,
+                ...getZodiacPosition(houseLongitude)
+            };
+        });
 
-        const planetBodies = {
+        // Calculate other planets
+        const planets = {
             Mercury: Astronomy.Body.Mercury,
             Venus: Astronomy.Body.Venus,
             Mars: Astronomy.Body.Mars,
@@ -247,130 +173,44 @@ function calculateChartPositions(
             Saturn: Astronomy.Body.Saturn,
             Uranus: Astronomy.Body.Uranus,
             Neptune: Astronomy.Body.Neptune,
-            Pluto: Astronomy.Body.Pluto,
+            Pluto: Astronomy.Body.Pluto
         };
 
-        //Pre-calculate and store planet positions
-        const planetPositions: { [key: string]: ZodiacPosition } = {};
-        for (const [planet, body] of Object.entries(planetBodies)) {
-            const planetEquator = Astronomy.Equator(
-                body,
-                astroTime,
-                observer,
-                true,
-                true
-            );
-            const planetEcliptic = Astronomy.Ecliptic(planetEquator.vec);
-            const longitude = planetEcliptic.elon;
-            planetPositions[planet] = getZodiacPosition(longitude);
-        }
-        console.timeLog("calculateChartPositions", "Planets calculated");
+        Object.entries(planets).forEach(([planet, body]) => {
+            const vector = Astronomy.GeoVector(body, date_obj, observer);
+            const longitude = Astronomy.EclipticLongitude(vector);
+            positions[planet] = getZodiacPosition(longitude);
+        });
 
-        positions = { ...positions, ...planetPositions };
-
-        // Simplify aspect calculations
-        const aspects: Aspect[] = [];
-        const majorAspectAngles = [0, 60, 90, 120, 180]; // Conjunction, Sextile, Square, Trine, Opposition
-        const majorAspectOrbs = [8, 6, 8, 8, 8];
-
-        const bodies = ['Sun', 'Moon', ...Object.keys(planetBodies)];
-
-        for (let i = 0; i < bodies.length; i++) {
-            for (let j = i + 1; j < bodies.length; j++) {
-                const body1 = bodies[i];
-                const body2 = bodies[j];
-                const long1 =
-                    body1 === 'Sun'
-                        ? sunLongitude
-                        : body1 === 'Moon'
-                        ? moonLongitude
-                        : planetPositions[body1].degree;
-                const long2 =
-                    body2 === 'Sun'
-                        ? sunLongitude
-                        : body2 === 'Moon'
-                        ? moonLongitude
-                        : planetPositions[body2].degree;
-                const diff = Math.abs(long1 - long2);
-
-                for (let k = 0; k < majorAspectAngles.length; k++) {
-                    const aspectAngle = majorAspectAngles[k];
-                    const orb = majorAspectOrbs[k];
-                    const aspectDiff = Math.min(
-                        Math.abs(diff - aspectAngle),
-                        360 - Math.abs(diff - aspectAngle)
-                    );
-
-                    if (aspectDiff <= orb) {
-                        aspects.push({
-                            planet1: body1,
-                            planet2: body2,
-                            aspect: [
-                                'Conjunction',
-                                'Sextile',
-                                'Square',
-                                'Trine',
-                                'Opposition',
-                            ][k],
-                            orb: aspectDiff.toFixed(1),
-                        });
-                    }
-                }
-            }
-        }
-        positions.Aspects = aspects;
-        console.timeLog("calculateChartPositions", "Aspects calculated");
-
-        console.log('Calculated positions:', positions);
         console.timeEnd("calculateChartPositions");
         return positions;
+
     } catch (error) {
         console.error('Error in calculateChartPositions:', error);
         throw error;
     }
 }
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    console.log('API route /api/calculate-positions started');
 
-    if (req.method !== 'POST'){
-        res.setHeader('Allow', ['POST']);
-        return res.status(405).end(`Method ${req.method} Not Allowed`);
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
     }
 
     try {
-        const body = req.body;
-        console.log('Processing request for:', {
-            date: body.birthDate,
-            time: body.birthTime,
-            place: body.place,
-        });
-
-        const { birthDate, birthTime, place } = body;
+        const { birthDate, birthTime, place } = req.body;
 
         if (!birthDate || !birthTime || !place) {
-            console.error(
-                'Missing required fields:',
-                { birthDate, birthTime, place }
-            );
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        console.log('Calculating positions...');
-        const positions = calculateChartPositions(
-            birthDate,
-            birthTime,
-            place
-        );
-        console.log('Calculated positions:', positions);
-
-        // Return ONLY the calculated positions
+        const positions = calculateChartPositions(birthDate, birthTime, place);
         return res.status(200).json(positions);
+
     } catch (error) {
         console.error('API Error:', error);
         return res.status(500).json({
-                error: 'Failed to calculate astrological positions',
-                details:
-                    error instanceof Error ? error.message : 'Unknown error',
-            });
+            error: 'Failed to calculate chart positions',
+            details: error instanceof Error ? error.message : 'Unknown error'
+        });
     }
 }
