@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import moment from 'moment-timezone';
 import cities from '../../../../public/cities.json'; // Update path to cities.json
 import * as Astronomy from 'astronomy-engine';
+import { type } from 'os';
 
 // Type definitions for clarity and type safety
 type CityData = {
@@ -175,7 +176,7 @@ function calculateChartPositions(date: string, time: string, place: string): Cha
     const moonZodiac = getZodiacPosition(moonLongitude);
     const ascendantZodiac = getZodiacPosition(ascendantLongitude);
 
-    const positions: ChartPositions = {
+    let positions: ChartPositions = { // Changed const to let
       Sun: sunZodiac,
       Moon: moonZodiac,
       Ascendant: ascendantZodiac,
@@ -208,7 +209,7 @@ function calculateChartPositions(date: string, time: string, place: string): Cha
       planetPositions[planet] = getZodiacPosition(longitude);
     });
 
-    positions = { ...positions, ...planetPositions };
+    positions = { ...positions, ...planetPositions }; // Now this is valid
 
     // Simplify aspect calculations
     const aspects: Aspect[] = [];
