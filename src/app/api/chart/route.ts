@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import moment from 'moment-timezone';
-import cities from '../../../../public/cities.json'; // Update path to cities.json
+import cities from '../../../../public/cities.json'; // Correct relative path
 import * as Astronomy from 'astronomy-engine';
 
-// Type definitions for clarity and type safety
+// --- Type Definitions ---
 type CityData = {
   name: string;
   state_code: string;
@@ -50,6 +50,7 @@ type ChartPositions = {
   Aspects?: Aspect[];
 };
 
+// --- Data ---
 const stateTimezones: StateTimezones = {
   'AK': 'America/Anchorage',
   'AL': 'America/Chicago',
@@ -104,33 +105,37 @@ const stateTimezones: StateTimezones = {
   'WY': 'America/Denver'
 };
 
-const cityCoordinates: CityCoordinates = (cities as CityData[]).reduce((acc: CityCoordinates, city: CityData) => {
-  const key = `${city.name.toUpperCase()}, ${city.state_code.toUpperCase()}`;
-  acc[key] = { lat: parseFloat(city.lat), lng: parseFloat(city.lng) };
-  return acc;
+// Initialize and populate cityCoordinates.  Make sure `cities` is correctly typed!
+const cityCoordinates: CityCoordinates = (cities as CityData[]).reduce((acc, city) => {
+    const key = `${city.name.toUpperCase()}, ${city.state_code.toUpperCase()}`;
+    acc[key] = { lat: parseFloat(city.lat), lng: parseFloat(city.lng) };
+    return acc;
 }, {} as CityCoordinates);
 
-const zodiacPositionCache: { [key: number]: ZodiacPosition } = {}; //cache object
+// --- Caching ---
+const zodiacPositionCache: { [key: number]: ZodiacPosition } = {};
 
+// --- Helper Function (Outside calculateChartPositions)---
 function getZodiacPosition(longitude: number): ZodiacPosition {
-    if (zodiacPositionCache[longitude]) {
-        return zodiacPositionCache[longitude]; // Return cached value if available
-    }
+  if (zodiacPositionCache[longitude]) {
+    return zodiacPositionCache[longitude];
+  }
 
-    const signs = [
-        "Aries", "Taurus", "Gemini", "Cancer",
-        "Leo", "Virgo", "Libra", "Scorpio",
-        "Sagittarius", "Capricorn", "Aquarius", "Pisces"
-    ];
-    const signIndex = Math.floor(longitude / 30);
-    const degree = Math.floor(longitude % 30);
-    const minutes = Math.round((longitude % 1) * 60);
+  const signs = [
+    "Aries", "Taurus", "Gemini", "Cancer",
+    "Leo", "Virgo", "Libra", "Scorpio",
+    "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+  ];
+  const signIndex = Math.floor(longitude / 30);
+  const degree = Math.floor(longitude % 30);
+  const minutes = Math.round((longitude % 1) * 60);
 
-    const zodiacPosition = { sign: signs[signIndex], degree, minutes };
-    zodiacPositionCache[longitude] = zodiacPosition; //store in cache
-    return zodiacPosition;
+  const zodiacPosition = { sign: signs[signIndex], degree, minutes };
+  zodiacPositionCache[longitude] = zodiacPosition; //store in cache
+  return zodiacPosition;
 }
 
+// --- Main Calculation Function ---
 function calculateChartPositions(date: string, time: string, place: string): ChartPositions {
   console.time("calculateChartPositions"); // Start timer
   try {
@@ -142,8 +147,8 @@ function calculateChartPositions(date: string, time: string, place: string): Cha
     let timezone = stateTimezones[state];
 
     if (!coordinates) {
-      const cityData = (cities as CityData[]).find(c => 
-        c.name.toLowerCase() === city.toLowerCase() && 
+      const cityData = (cities as CityData[]).find(c =>
+        c.name.toLowerCase() === city.toLowerCase() &&
         c.state_code === state.toUpperCase()
       );
 
@@ -183,7 +188,7 @@ function calculateChartPositions(date: string, time: string, place: string): Cha
     const lst = Astronomy.SiderealTime(astroTime) + coordinates.lng / 15;
     const ascendantLongitude = (lst * 15) % 360;
 
-    // Cache zodiac positions
+    // Use cached zodiac positions
     const sunZodiac = getZodiacPosition(sunLongitude);
     const moonZodiac = getZodiacPosition(moonLongitude);
     const ascendantZodiac = getZodiacPosition(ascendantLongitude);
@@ -214,16 +219,18 @@ function calculateChartPositions(date: string, time: string, place: string): Cha
       Pluto: Astronomy.Body.Pluto
     };
 
+    //Pre-calculate and store planet positions
     const planetPositions: { [key: string]: ZodiacPosition } = {};
-    Object.entries(planetBodies).forEach(([planet, body]) => {
-      const planetEquator = Astronomy.Equator(body, astroTime, observer, true, true);
-      const planetEcliptic = Astronomy.Ecliptic(planetEquator.vec);
-      const longitude = planetEcliptic.elon;
-      planetPositions[planet] = getZodiacPosition(longitude);
-    });
+    for (const [planet, body] of Object.entries(planetBodies)) {
+        const planetEquator = Astronomy.Equator(body, astroTime, observer, true, true);
+        const planetEcliptic = Astronomy.Ecliptic(planetEquator.vec);
+        const longitude = planetEcliptic.elon;
+        planetPositions[planet] = getZodiacPosition(longitude);
+    }
     console.timeLog("calculateChartPositions", "Planets calculated");
 
     positions = { ...positions, ...planetPositions };
+
 
     // Simplify aspect calculations
     const aspects: Aspect[] = [];
@@ -236,8 +243,8 @@ function calculateChartPositions(date: string, time: string, place: string): Cha
       for (let j = i + 1; j < bodies.length; j++) {
         const body1 = bodies[i];
         const body2 = bodies[j];
-        const long1 = body1 === 'Sun' ? sunLongitude : body1 === 'Moon' ? moonLongitude : planetPositions[body1].degree;
-        const long2 = body2 === 'Sun' ? sunLongitude : body2 === 'Moon' ? moonLongitude : planetPositions[body2].degree;
+        const long1 = body1 === 'Sun' ? sunLongitude : (body1 === 'Moon' ? moonLongitude : planetPositions[body1].degree);
+        const long2 = body2 === 'Sun' ? sunLongitude : (body2 === 'Moon' ? moonLongitude : planetPositions[body2].degree);
         const diff = Math.abs(long1 - long2);
 
         for (let k = 0; k < majorAspectAngles.length; k++) {
