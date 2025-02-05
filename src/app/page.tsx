@@ -5,7 +5,7 @@ import { useState } from "react";
 
 interface ChartData {
     summary: string;
-    details: Record<string, string>;  // Keep details as strings
+    details: Record<string, string>; // Keep details as strings
     calculated_positions?: {
         [key: string]: {
             sign: string;
@@ -120,7 +120,7 @@ const HomePage = () => {
         }
     };
 
-    // Corrected ExpandableSection:  Uses dangerouslySetInnerHTML
+    // Corrected ExpandableSection:  Simpler and uses string for content
     const ExpandableSection = ({ title, content }: { title: React.ReactNode; content: string }) => {
         const [expanded, setExpanded] = useState(false);
 
@@ -139,13 +139,16 @@ const HomePage = () => {
                 </div>
                 {expanded && (
                     <div className="p-4 bg-white">
-                        {/* Use dangerouslySetInnerHTML to render the HTML content */}
-                        <p className="body-text leading-relaxed" dangerouslySetInnerHTML={{ __html: content }} />
+                        {/*  Apply body-text class directly to the <p> tag */}
+                        <p className="body-text leading-relaxed">
+                            {content}
+                        </p>
                     </div>
                 )}
             </div>
         );
     };
+
     const AstrologyBackground = () => (
         <div className="fixed inset-0 z-[-1]">
             <div className="absolute inset-0 bg-gradient-to-b from-indigo-900 via-blue-900 to-black" />
@@ -173,11 +176,11 @@ const HomePage = () => {
                         </p>
                         <div className="space-y-4">
                             {Object.entries(chartData.details).map(([section, info]) => (
-                                // Corrected: Pass strings directly, apply classes within ExpandableSection
+                                // Corrected: Pass the info string directly as content
                                 <ExpandableSection
                                     key={section}
-                                    title={<span className="subheading">{section}</span>} // Corrected: Wrap title in span
-                                    content={info} // Pass content directly, no wrapping span
+                                    title={<span className="subheading">{section}</span>}
+                                    content={info} // Pass the string directly
                                 />
                             ))}
                         </div>
