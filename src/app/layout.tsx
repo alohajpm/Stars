@@ -44,7 +44,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} ${lora.variable} ${greatVibes.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${montserrat.variable} ${lora.variable} ${greatVibes.variable}`}>
       <body className="antialiased"> {/* Removed font classes from body */}
         {children}
       </body>
