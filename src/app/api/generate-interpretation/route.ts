@@ -1,30 +1,31 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+// /src/app/api/generate-interpretation/route.ts
+import { NextResponse } from 'next/server'; // Correct import for app router
 import Anthropic from '@anthropic-ai/sdk';
 
 export const config = {
     maxDuration: 300, // Set maximum duration to 5 minutes
 };
 
-export async function POST(request: Request) { ... }
+// Corrected: Named export 'POST', not default, and using Request/NextResponse
+export async function POST(request: Request) {
     console.log('API route /api/generate-interpretation started');
 
     if (!process.env.ANTHROPIC_API_KEY) {
         console.error('Missing ANTHROPIC_API_KEY');
-        return res.status(500).json({ error: 'Server configuration error - missing API key' });
+        return NextResponse.json({ error: 'Server configuration error - missing API key' }, { status: 500 });
     }
 
-    if (req.method !== 'POST') {
-        res.setHeader('Allow', ['POST']);
-        return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
+    if (request.method !== 'POST') {
+      return NextResponse.json({ error: `Method ${request.method} Not Allowed` }, {status: 405});
     }
 
     try {
-        const body = req.body;
+        const body = await request.json(); // Use request.json()
         const { positions } = body;
 
         if (!positions) {
             console.error('Missing required fields: positions');
-            return res.status(400).json({ error: 'Missing required fields: positions' });
+            return NextResponse.json({ error: 'Missing required fields: positions' }, { status: 400 });
         }
 
         console.log('Received positions:', positions);
@@ -36,7 +37,7 @@ export async function POST(request: Request) { ... }
         });
 
         console.log('Making Claude API call...');
-        
+
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 240000);
 
@@ -83,32 +84,35 @@ export async function POST(request: Request) { ... }
             if (!jsonMatch) {
                 throw new Error('No JSON found in response');
             }
-
             const chartData = JSON.parse(jsonMatch[0]);
+
 
             if (!chartData.summary || !chartData.details) {
                 throw new Error('Response missing required fields');
             }
 
             console.log('Successfully generated chart data');
-            return res.status(200).json(chartData);
-            
+            return NextResponse.json(chartData);
+
         } catch (error) {
             clearTimeout(timeout);
-            throw error;
+          return NextResponse.json(
+                {
+                    error: 'Failed to generate astrological interpretation',
+                    details: error instanceof Error ? error.message : 'Unknown error'
+                },
+                { status: 500 }
+            );
         }
 
     } catch (error) {
         console.error('API Error:', error);
-        if (error instanceof Error) {
-            return res.status(500).json({
-                error: 'Failed to generate astrological interpretation',
-                details: error.message
-            });
-        }
-        return res.status(500).json({
-            error: 'Failed to generate astrological interpretation',
-            details: 'Unknown error occurred'
-        });
+      return NextResponse.json(
+                {
+                    error: 'Failed to generate astrological interpretation',
+                    details: error instanceof Error ? error.message : 'Unknown error'
+                },
+                { status: 500 }
+            );
     }
 }
