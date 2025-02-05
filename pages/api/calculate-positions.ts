@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextApiRequest, NextApiResponse } from 'next';
 import moment from 'moment-timezone';
 import fs from 'fs';
 import path from 'path';
@@ -21,18 +21,7 @@ type CityCoordinates = {
     };
 };
 
-type Planet =
-    | 'Sun'
-    | 'Moon'
-    | 'Ascendant'
-    | 'Mercury'
-    | 'Venus'
-    | 'Mars'
-    | 'Jupiter'
-    | 'Saturn'
-    | 'Uranus'
-    | 'Neptune'
-    | 'Pluto';
+type Planet = 'Sun' | 'Moon' | 'Ascendant' | 'Mercury' | 'Venus' | 'Mars' | 'Jupiter' | 'Saturn' | 'Uranus' | 'Neptune' | 'Pluto';
 
 type ZodiacPosition = {
     sign: string;
@@ -63,69 +52,69 @@ type ChartPositions = {
 
 // --- Data ---
 const stateTimezones: StateTimezones = {
-    AK: 'America/Anchorage',
-    AL: 'America/Chicago',
-    AR: 'America/Chicago',
-    AZ: 'America/Phoenix',
-    CA: 'America/Los_Angeles',
-    CO: 'America/Denver',
-    CT: 'America/New_York',
-    DC: 'America/New_York',
-    DE: 'America/New_York',
-    FL: 'America/New_York',
-    GA: 'America/New_York',
-    HI: 'Pacific/Honolulu',
-    IA: 'America/Chicago',
-    ID: 'America/Denver',
-    IL: 'America/Chicago',
-    IN: 'America/Indiana/Indianapolis',
-    KS: 'America/Chicago',
-    KY: 'America/New_York',
-    LA: 'America/Chicago',
-    MA: 'America/New_York',
-    MD: 'America/New_York',
-    ME: 'America/New_York',
-    MI: 'America/New_York',
-    MN: 'America/Chicago',
-    MO: 'America/Chicago',
-    MS: 'America/Chicago',
-    MT: 'America/Denver',
-    NC: 'America/New_York',
-    ND: 'America/Chicago',
-    NE: 'America/Chicago',
-    NH: 'America/New_York',
-    NJ: 'America/New_York',
-    NM: 'America/Denver',
-    NV: 'America/Los_Angeles',
-    NY: 'America/New_York',
-    OH: 'America/New_York',
-    OK: 'America/Chicago',
-    OR: 'America/Los_Angeles',
-    PA: 'America/New_York',
-    RI: 'America/New_York',
-    SC: 'America/New_York',
-    SD: 'America/Chicago',
-    TN: 'America/Chicago',
-    TX: 'America/Chicago',
-    UT: 'America/Denver',
-    VA: 'America/New_York',
-    VT: 'America/New_York',
-    WA: 'America/Los_Angeles',
-    WI: 'America/Chicago',
-    WV: 'America/New_York',
-    WY: 'America/Denver',
+    'AK': 'America/Anchorage',
+    'AL': 'America/Chicago',
+    'AR': 'America/Chicago',
+    'AZ': 'America/Phoenix',
+    'CA': 'America/Los_Angeles',
+    'CO': 'America/Denver',
+    'CT': 'America/New_York',
+    'DC': 'America/New_York',
+    'DE': 'America/New_York',
+    'FL': 'America/New_York',
+    'GA': 'America/New_York',
+    'HI': 'Pacific/Honolulu',
+    'IA': 'America/Chicago',
+    'ID': 'America/Denver',
+    'IL': 'America/Chicago',
+    'IN': 'America/Indiana/Indianapolis',
+    'KS': 'America/Chicago',
+    'KY': 'America/New_York',
+    'LA': 'America/Chicago',
+    'MA': 'America/New_York',
+    'MD': 'America/New_York',
+    'ME': 'America/New_York',
+    'MI': 'America/New_York',
+    'MN': 'America/Chicago',
+    'MO': 'America/Chicago',
+    'MS': 'America/Chicago',
+    'MT': 'America/Denver',
+    'NC': 'America/New_York',
+    'ND': 'America/Chicago',
+    'NE': 'America/Chicago',
+    'NH': 'America/New_York',
+    'NJ': 'America/New_York',
+    'NM': 'America/Denver',
+    'NV': 'America/Los_Angeles',
+    'NY': 'America/New_York',
+    'OH': 'America/New_York',
+    'OK': 'America/Chicago',
+    'OR': 'America/Los_Angeles',
+    'PA': 'America/New_York',
+    'RI': 'America/New_York',
+    'SC': 'America/New_York',
+    'SD': 'America/Chicago',
+    'TN': 'America/Chicago',
+    'TX': 'America/Chicago',
+    'UT': 'America/Denver',
+    'VA': 'America/New_York',
+    'VT': 'America/New_York',
+    'WA': 'America/Los_Angeles',
+    'WI': 'America/Chicago',
+    'WV': 'America/New_York',
+    'WY': 'America/Denver'
 };
 
-// Read cities data using fs.readFileSync (synchronously)
+// --- Read cities data using fs.readFileSync (synchronously) ---
 const publicDir = path.join(process.cwd(), 'public'); // Path to public directory
 const citiesFilePath = path.join(publicDir, 'cities.json');
 const citiesData = fs.readFileSync(citiesFilePath, 'utf8');
 const cities = JSON.parse(citiesData); // Parse as JSON
 
 const cityCoordinates: CityCoordinates = (cities as CityData[]).reduce((acc: CityCoordinates, city: CityData) => {
-  const key = `${city.name.toUpperCase()}, ${city.state_code.toUpperCase()}`;
-  acc[key] = { lat: parseFloat(city.lat), lng: parseFloat(city.lng) };
-  return acc;
+    const key = `${city.name.toUpperCase()}, ${city.state_code.toUpperCase()}`;
+    acc[key] = { lat: parseFloat(city.lat), lng: parseFloat(city.lng) };
+    return acc;
 }, {} as CityCoordinates);
 
 // --- Caching ---
@@ -138,18 +127,9 @@ function getZodiacPosition(longitude: number): ZodiacPosition {
     }
 
     const signs = [
-        'Aries',
-        'Taurus',
-        'Gemini',
-        'Cancer',
-        'Leo',
-        'Virgo',
-        'Libra',
-        'Scorpio',
-        'Sagittarius',
-        'Capricorn',
-        'Aquarius',
-        'Pisces',
+        "Aries", "Taurus", "Gemini", "Cancer",
+        "Leo", "Virgo", "Libra", "Scorpio",
+        "Sagittarius", "Capricorn", "Aquarius", "Pisces"
     ];
     const signIndex = Math.floor(longitude / 30);
     const degree = Math.floor(longitude % 30);
@@ -166,7 +146,7 @@ function calculateChartPositions(
     time: string,
     place: string
 ): ChartPositions {
-    console.time('calculateChartPositions'); // Start timer
+    console.time("calculateChartPositions"); // Start timer
     try {
         const [city, state] = place.split(',').map((s) => s.trim());
         console.log('Parsing location:', { city, state });
@@ -221,7 +201,7 @@ function calculateChartPositions(
         );
         const sunEcliptic = Astronomy.Ecliptic(sunEquator.vec);
         const sunLongitude = sunEcliptic.elon;
-        console.timeLog('calculateChartPositions', 'Sun position calculated');
+        console.timeLog("calculateChartPositions", "Sun position calculated");
 
         const moonEquator = Astronomy.Equator(
             Astronomy.Body.Moon,
@@ -232,7 +212,7 @@ function calculateChartPositions(
         );
         const moonEcliptic = Astronomy.Ecliptic(moonEquator.vec);
         const moonLongitude = moonEcliptic.elon;
-        console.timeLog('calculateChartPositions', 'Moon position calculated');
+        console.timeLog("calculateChartPositions", "Moon position calculated");
 
         const lst = Astronomy.SiderealTime(astroTime) + coordinates.lng / 15;
         const ascendantLongitude = (lst * 15) % 360;
@@ -257,7 +237,7 @@ function calculateChartPositions(
                     ...getZodiacPosition(houseLongitude),
                 };
             });
-        console.timeLog('calculateChartPositions', 'Houses calculated');
+        console.timeLog("calculateChartPositions", "Houses calculated");
 
         const planetBodies = {
             Mercury: Astronomy.Body.Mercury,
@@ -284,7 +264,7 @@ function calculateChartPositions(
             const longitude = planetEcliptic.elon;
             planetPositions[planet] = getZodiacPosition(longitude);
         }
-        console.timeLog('calculateChartPositions', 'Planets calculated');
+        console.timeLog("calculateChartPositions", "Planets calculated");
 
         positions = { ...positions, ...planetPositions };
 
@@ -339,10 +319,10 @@ function calculateChartPositions(
             }
         }
         positions.Aspects = aspects;
-        console.timeLog('calculateChartPositions', 'Aspects calculated');
+        console.timeLog("calculateChartPositions", "Aspects calculated");
 
         console.log('Calculated positions:', positions);
-        console.timeEnd('calculateChartPositions');
+        console.timeEnd("calculateChartPositions");
         return positions;
     } catch (error) {
         console.error('Error in calculateChartPositions:', error);
@@ -350,11 +330,11 @@ function calculateChartPositions(
     }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextApiRequest, res: NextApiResponse) {
     console.log('API route /api/calculate-positions started');
 
     try {
-        const body = await request.json();
+        const body = await request.body;
         console.log('Processing request for:', {
             date: body.birthDate,
             time: body.birthTime,
@@ -368,10 +348,7 @@ export async function POST(request: Request) {
                 'Missing required fields:',
                 { birthDate, birthTime, place }
             );
-            return NextResponse.json(
-                { error: 'Missing required fields' },
-                { status: 400 }
-            );
+            return res.status(400).json({ error: 'Missing required fields' });
         }
 
         console.log('Calculating positions...');
@@ -383,16 +360,13 @@ export async function POST(request: Request) {
         console.log('Calculated positions:', positions);
 
         // Return ONLY the calculated positions
-        return NextResponse.json(positions);
+        return res.status(200).json(positions);
     } catch (error) {
         console.error('API Error:', error);
-        return NextResponse.json(
-            {
+        return res.status(500).json({
                 error: 'Failed to calculate astrological positions',
                 details:
                     error instanceof Error ? error.message : 'Unknown error',
-            },
-            { status: 500 }
-        );
+            });
     }
 }
