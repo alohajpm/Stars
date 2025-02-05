@@ -330,11 +330,11 @@ function calculateChartPositions(
     }
 }
 
-export async function POST(request: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     console.log('API route /api/calculate-positions started');
 
     try {
-        const body = await request.body;
+        const body = req.body;
         console.log('Processing request for:', {
             date: body.birthDate,
             time: body.birthTime,
