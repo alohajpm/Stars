@@ -1,3 +1,4 @@
+/* src/app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -17,20 +18,32 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: var(--font-lora);
+  /* Removed font-family from body */
 }
 
 h1 {
-    font-family: var(--font-GreatVibes-Regular);
+    font-family: var(--font-great-vibes); /* Corrected variable name */
     /* Other styles for h1 */
 }
 
-h2, h3, .subheading { /* Use a class for consistent subheadings */
-    font-family: var(--font-Montserrat-VariableFont_wght);
+h2, h3, .subheading {
+    font-family: var(--font-montserrat); /* Corrected variable name */
     /* Other styles for subheadings */
 }
 
-p, .body-text { /* Use a class for body text */
-    font-family: var(--font-Lora-VariableFont_wght);
+p, .body-text {
+    font-family: var(--font-lora); /* Corrected variable name */
     /* Other styles for body text */
+}
+
+/* Example of more specific styles (optional, but good practice): */
+.summary-text {
+    font-family: var(--font-lora);
+    font-size: 1.2em;
+    line-height: 1.6;
+}
+
+.expandable-section-title {
+    font-family: var(--font-montserrat);
+    font-weight: 700; /* Use bold for section titles */
 }
