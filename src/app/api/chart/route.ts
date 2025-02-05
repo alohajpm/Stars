@@ -1,10 +1,57 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import moment from 'moment-timezone';
-import cities from 'cities.json';
+import cities from '../../../../public/cities.json'; // Update path to cities.json
 import * as Astronomy from 'astronomy-engine';
+import { type } from 'os';
 
-const stateTimezones: { [key: string]: string } = {
+// Type definitions for clarity and type safety
+type CityData = {
+  name: string;
+  state_code: string;
+  lat: string;
+  lng: string;
+};
+
+type StateTimezones = { [state: string]: string };
+
+type CityCoordinates = {
+  [cityState: string]: {
+    lat: number;
+    lng: number;
+  };
+};
+
+type Planet = 'Sun' | 'Moon' | 'Ascendant' | 'Mercury' | 'Venus' | 'Mars' | 'Jupiter' | 'Saturn' | 'Uranus' | 'Neptune' | 'Pluto';
+
+type ZodiacPosition = {
+  sign: string;
+  degree: number;
+  minutes: number;
+};
+
+type House = {
+  house: number;
+  sign: string;
+  degree: number;
+  minutes: number;
+};
+
+type Aspect = {
+  planet1: string;
+  planet2: string;
+  aspect: string;
+  orb: string;
+};
+
+type ChartPositions = {
+  [key in Planet]?: ZodiacPosition;
+} & {
+  Houses?: House[];
+  Aspects?: Aspect[];
+};
+
+const stateTimezones: StateTimezones = {
   'AK': 'America/Anchorage',
   'AL': 'America/Chicago',
   'AR': 'America/Chicago',
@@ -58,33 +105,13 @@ const stateTimezones: { [key: string]: string } = {
   'WY': 'America/Denver'
 };
 
-const cityCoordinates: { [key: string]: { lat: number; lng: number; } } = {
-  'WICHITA FALLS, TX': { lat: 33.9137, lng: -98.4934 },
-  'NEW YORK, NY': { lat: 40.7128, lng: -74.0060 },
-  'LOS ANGELES, CA': { lat: 34.0522, lng: -118.2437 },
-  'CHICAGO, IL': { lat: 41.8781, lng: -87.6298 },
-  'LONDON, UK': { lat: 51.5074, lng: -0.1278 },
-  'PARIS, FR': { lat: 48.8566, lng: 2.3522 },
-  'TOKYO, JP': { lat: 35.6895, lng: 139.6917 },
-  'SYDNEY, AU': { lat: -33.8688, lng: 151.2093 },
-  'RIO DE JANEIRO, BR': { lat: -22.9068, lng: -43.1729 },
-  'MOSCOW, RU': { lat: 55.7558, lng: 37.6173 },
-  'CAIRO, EG': { lat: 30.0444, lng: 31.2357 },
-  'MUMBAI, IN': { lat: 19.0760, lng: 72.8777 },
-  'BEIJING, CN': { lat: 39.9042, lng: 116.4074 },
-  'MEXICO CITY, MX': { lat: 19.4326, lng: -99.1332 },
-  'CAPE TOWN, ZA': { lat: -33.9249, lng: 18.4241 },
-  'TORONTO, CA': { lat: 43.6532, lng: -79.3832},
-  'DUBAI, AE': { lat: 25.2048, lng: 55.2708 },
-  'HONG KONG, CN': { lat: 22.3193, lng: 114.1694 },
-  'SINGAPORE, SG': { lat: 1.3521, lng: 103.8198 },
-  'AUCKLAND, NZ': { lat: -36.8485, lng: 174.7633 },
-  'SACRAMENTO, CA': { lat: 38.5816, lng: -121.4944 },
-  'MODESTO, CA': { lat: 37.6388, lng: -120.9947 },
-  'SAN DIEGO, CA': { lat: 32.7157, lng: -117.1611 }
-};
+const cityCoordinates: CityCoordinates = (cities as CityData[]).reduce((acc: CityCoordinates, city: CityData) => {
+  const key = `${city.name.toUpperCase()}, ${city.state_code.toUpperCase()}`;
+  acc[key] = { lat: parseFloat(city.lat), lng: parseFloat(city.lng) };
+  return acc;
+}, {} as CityCoordinates);
 
-function calculateChartPositions(date: string, time: string, place: string) {
+function calculateChartPositions(date: string, time: string, place: string): ChartPositions {
   try {
     const [city, state] = place.split(',').map(s => s.trim());
     console.log('Parsing location:', { city, state });
@@ -94,7 +121,7 @@ function calculateChartPositions(date: string, time: string, place: string) {
     let timezone = stateTimezones[state];
 
     if (!coordinates) {
-      const cityData = (cities as any[]).find(c => 
+      const cityData = (cities as CityData[]).find(c => 
         c.name.toLowerCase() === city.toLowerCase() && 
         c.state_code === state.toUpperCase()
       );
@@ -118,27 +145,21 @@ function calculateChartPositions(date: string, time: string, place: string) {
     const datetime = moment.tz(`${date} ${time}`, timezone);
     console.log('Parsed datetime:', datetime.format());
 
-    // Create an AstroTime object directly
     const astroTime = new Astronomy.AstroTime(datetime.toDate());
-
-    // Calculate positions using Astronomy.js
     const observer = new Astronomy.Observer(coordinates.lat, coordinates.lng, 0);
 
-    // Get Sun position (Corrected Ecliptic call)
     const sunEquator = Astronomy.Equator(Astronomy.Body.Sun, astroTime, observer, true, true);
     const sunEcliptic = Astronomy.Ecliptic(sunEquator.vec);
     const sunLongitude = sunEcliptic.elon;
 
-    // Get Moon position (Corrected Ecliptic call)
     const moonEquator = Astronomy.Equator(Astronomy.Body.Moon, astroTime, observer, true, true);
     const moonEcliptic = Astronomy.Ecliptic(moonEquator.vec);
     const moonLongitude = moonEcliptic.elon;
 
-    // Calculate Ascendant 
     const lst = Astronomy.SiderealTime(astroTime) + coordinates.lng / 15;
     const ascendantLongitude = (lst * 15) % 360;
 
-    function getZodiacPosition(longitude: number) {
+    function getZodiacPosition(longitude: number): ZodiacPosition {
       const signs = [
         "Aries", "Taurus", "Gemini", "Cancer", 
         "Leo", "Virgo", "Libra", "Scorpio", 
@@ -150,14 +171,12 @@ function calculateChartPositions(date: string, time: string, place: string) {
       return { sign: signs[signIndex], degree, minutes };
     }
 
-    // Initialize positions object with accurate Sun, Moon, and Ascendant
-    const positions: any = {
+    const positions: ChartPositions = {
       Sun: getZodiacPosition(sunLongitude),
       Moon: getZodiacPosition(moonLongitude),
       Ascendant: getZodiacPosition(ascendantLongitude),
     };
 
-    // Calculate house cusps
     positions.Houses = Array(12).fill(0).map((_, i) => {
       const houseLongitude = (ascendantLongitude + i * 30) % 360;
       return {
@@ -166,7 +185,6 @@ function calculateChartPositions(date: string, time: string, place: string) {
       };
     });
 
-    // Calculate planetary positions using correct Astronomy.js methods
     const planetBodies = {
       Mercury: Astronomy.Body.Mercury,
       Venus: Astronomy.Body.Venus,
@@ -185,16 +203,10 @@ function calculateChartPositions(date: string, time: string, place: string) {
       const planetEcliptic = Astronomy.Ecliptic(planetEquator.vec);
       const longitude = planetEcliptic.elon;
       planets[planet] = longitude;
-      positions[planet] = getZodiacPosition(longitude);
+      positions[planet as Planet] = getZodiacPosition(longitude);
     });
 
-    // Add planetary positions to the main positions object
-    Object.entries(planets).forEach(([planet, longitude]) => {
-      positions[planet] = getZodiacPosition(longitude);
-    });
-
-    // Calculate major aspects
-    const aspects: any[] = [];
+    const aspects: Aspect[] = [];
     const MAJOR_ASPECTS = [
       { name: 'Conjunction', angle: 0, orb: 8 },
       { name: 'Sextile', angle: 60, orb: 6 },
@@ -292,9 +304,9 @@ export async function POST(request: Request) {
         {
           "summary": "A 2-3 sentence overview of the chart's main themes",
           "details": {
-            "Sun Sign": "Detailed analysis of sun sign (${positions.Sun.sign}) at ${positions.Sun.degree}°${positions.Sun.minutes}'",
-            "Moon Sign": "Analysis of moon sign (${positions.Moon.sign}) at ${positions.Moon.degree}°${positions.Moon.minutes}'",
-            "Rising Sign": "Analysis of ascendant (${positions.Ascendant.sign}) at ${positions.Ascendant.degree}°${positions.Ascendant.minutes}'",
+            "Sun Sign": "Detailed analysis of sun sign (${positions.Sun?.sign}) at ${positions.Sun?.degree}°${positions.Sun?.minutes}'",
+            "Moon Sign": "Analysis of moon sign (${positions.Moon?.sign}) at ${positions.Moon?.degree}°${positions.Moon?.minutes}'",
+            "Rising Sign": "Analysis of ascendant (${positions.Ascendant?.sign}) at ${positions.Ascendant?.degree}°${positions.Ascendant?.minutes}'",
             "Planetary Positions": "Analysis of each planet's exact position and their significance",
             "House Placements": "Analysis of house cusps and planetary placements",
             "Major Aspects": "Analysis of the major aspects between planets calculated above",
@@ -307,22 +319,33 @@ export async function POST(request: Request) {
     });
 
     try {
-      const text = message.content[0].text;
-      console.log('Raw Claude response:', text);
+        const contentBlock = message.content[0];
 
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      const jsonStr = jsonMatch ? jsonMatch[0] : text;
+        if (contentBlock.type === 'text') {
+          const text = contentBlock.text;
+          console.log('Raw Claude response:', text);
 
-      const chartData = JSON.parse(jsonStr);
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          const jsonStr = jsonMatch ? jsonMatch[0] : text;
 
-      if (!chartData.summary || !chartData.details) {
-        throw new Error('Response missing required fields');
-      }
+          const chartData = JSON.parse(jsonStr);
 
-      chartData.calculated_positions = positions;
+          if (!chartData.summary || !chartData.details) {
+            throw new Error('Response missing required fields');
+          }
 
-      console.log('Successfully generated chart data');
-      return NextResponse.json(chartData);
+          chartData.calculated_positions = positions;
+
+          console.log('Successfully generated chart data');
+          return NextResponse.json(chartData);
+
+        } else {
+          console.error('Received a non-text response from Claude:', contentBlock);
+          return NextResponse.json(
+            { error: 'Received an unexpected response format from AI' },
+            { status: 500 }
+          );
+        }
 
     } catch (parseError) {
       console.error('Failed to parse Claude response:', parseError);
