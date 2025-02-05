@@ -5,7 +5,7 @@ import { useState } from "react";
 
 interface ChartData {
     summary: string;
-    details: Record<string, string>; // Keep details as strings
+    details: Record<string, string>;
     calculated_positions?: {
         [key: string]: {
             sign: string;
@@ -28,9 +28,10 @@ const HomePage = () => {
         e.preventDefault();
         setLoading(true);
         setError("");
-        setChartData(null);
-        setChartImage(null);
+        setChartData(null);  // Reset previous data
+        setChartImage(null); // Reset previous image
 
+          // Basic Client-Side Validation (Add more as needed)
         if (!birthDate) {
             setError("Birth Date is required.");
             setLoading(false);
@@ -47,7 +48,9 @@ const HomePage = () => {
             return;
         }
 
+
         try {
+            // 1. Calculate Positions
             const positionsRes = await fetch("/api/calculate-positions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -63,23 +66,30 @@ const HomePage = () => {
             const positionsData = await positionsRes.json();
             console.log("Received positions:", positionsData);
 
+            // 2. Generate Interpretation
             const interpretationRes = await fetch("/api/generate-interpretation", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ positions: positionsData }),
             });
 
-            if (!interpretationRes.ok) {
+
+             if (!interpretationRes.ok) {
                 const errorData = await interpretationRes.json().catch(() => ({}));
                 const errorMessage = errorData.error || errorData.details || "Failed to generate interpretation";
                 throw new Error(errorMessage);
             }
 
+
             const interpretationData = await interpretationRes.json();
+
+            // Add the calculated positions to the interpretation data
             interpretationData.calculated_positions = positionsData;
+
             console.log("Received interpretation:", interpretationData);
             setChartData(interpretationData);
 
+            // 3. Generate Chart Image
             await handleGenerateChart(positionsData);
 
         } catch (error) {
@@ -106,9 +116,9 @@ const HomePage = () => {
             });
 
             if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
-                const errorMessage = errorData.error || errorData.details || "Failed to generate chart image";
-                throw new Error(errorMessage);
+              const errorData = await res.json().catch(()=> ({}));
+              const errorMessage = errorData.error || errorData.details || "Failed to generate chart image";
+              throw new Error(errorMessage);
             }
 
             const data = await res.json();
@@ -120,34 +130,34 @@ const HomePage = () => {
         }
     };
 
-    // Corrected ExpandableSection:  Simpler and uses string for content
+    // Corrected ExpandableSection: Uses Tailwind classes and string content.
     const ExpandableSection = ({ title, content }: { title: React.ReactNode; content: string }) => {
-    const [expanded, setExpanded] = useState(false);
+        const [expanded, setExpanded] = useState(false);
 
-    return (
-        <div className="mb-4 border rounded-lg overflow-hidden bg-white/95">
-            <div
-                className="flex justify-between items-center p-4 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors"
-                onClick={() => setExpanded(!expanded)}
-            >
-                <h3 className="text-lg font-semibold text-blue-900 subheading">
-                    {title}
-                </h3>
-                <span className="text-2xl text-blue-700">
-                    {expanded ? '−' : '+'}
-                </span>
-            </div>
-            {expanded && (
-                // Add the class to the container div:
-                <div className="p-4 bg-white expandable-section-content">
-                    <p className="body-text leading-relaxed">
-                        {content}
-                    </p>
+        return (
+            <div className="mb-4 border rounded-lg overflow-hidden bg-white/95">
+                <div
+                    className="flex justify-between items-center p-4 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors"
+                    onClick={() => setExpanded(!expanded)}
+                >
+                    <h3 className="text-lg font-semibold text-blue-900 subheading">
+                        {title}
+                    </h3>
+                    <span className="text-2xl text-blue-700">
+                        {expanded ? '−' : '+'}
+                    </span>
                 </div>
-            )}
-        </div>
-    );
-};
+                {expanded && (
+                    // Add the class here:
+                    <div className="p-4 bg-white expandable-section-content">
+                        <p className="body-text leading-relaxed">
+                            {content}
+                        </p>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     const AstrologyBackground = () => (
         <div className="fixed inset-0 z-[-1]">
@@ -176,11 +186,10 @@ const HomePage = () => {
                         </p>
                         <div className="space-y-4">
                             {Object.entries(chartData.details).map(([section, info]) => (
-                                // Corrected: Pass the info string directly as content
                                 <ExpandableSection
                                     key={section}
-                                    title={<span className="subheading">{section}</span>}
-                                    content={info} // Pass the string directly
+                                    title={<span className = "subheading">{section}</span>}
+                                    content={info}
                                 />
                             ))}
                         </div>
@@ -223,7 +232,7 @@ const HomePage = () => {
           <div className="max-w-xl mx-auto">
               <div className="bg-white/90 backdrop-blur-sm shadow-xl rounded-lg">
                   <div className="p-8">
-                      <h1 className="text-3xl text-center mb-8 text-blue-900 heading">
+                      <h1 className="heading text-3xl text-center mb-8 text-blue-900">
                           Discover Your Astrological Chart
                       </h1>
                       {error && (
