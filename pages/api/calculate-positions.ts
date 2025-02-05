@@ -122,14 +122,11 @@ const citiesFilePath = path.join(publicDir, 'cities.json');
 const citiesData = fs.readFileSync(citiesFilePath, 'utf8');
 const cities = JSON.parse(citiesData); // Parse as JSON
 
-const cityCoordinates: CityCoordinates = (cities as CityData[]).reduce(
-    (acc: CityCoordinates, city: CityData) => {
-        const key = `${city.name.toUpperCase()}, ${city.state_code.toUpperCase()}`;
-        acc[key] = { lat: parseFloat(city.lat), lng: parseFloat(city.lng) };
-        return acc;
-    },
-    {} as CityCoordinates
-);
+const cityCoordinates: CityCoordinates = (cities as CityData[]).reduce((acc: CityCoordinates, city: CityData) => {
+  const key = `${city.name.toUpperCase()}, ${city.state_code.toUpperCase()}`;
+  acc[key] = { lat: parseFloat(city.lat), lng: parseFloat(city.lng) };
+  return acc;
+}, {} as CityCoordinates);
 
 // --- Caching ---
 const zodiacPositionCache: { [key: number]: ZodiacPosition } = {};
