@@ -9,6 +9,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ error: 'Server configuration error - missing API key' });
     }
 
+    if (req.method !== 'POST') {
+        res.setHeader('Allow', ['POST']);
+        return res.status(405).end(`Method ${req.method} Not Allowed`);
+    }
+
     try {
         const body = req.body
         const { positions } = body; // Receive pre-calculated positions
@@ -37,14 +42,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 {
                     role: 'user',
                     content: `Using these EXACT calculated positions for a natal chart:
-        <span class="math-inline">\{JSON\.stringify\(positions, null, 2\)\}
-Generate an astrological interpretation as perfectly formatted JSON using exactly this structure\:
-\{
-"summary"\: "A 2\-3 sentence overview of the chart's main themes",
-"details"\: \{
-"Sun Sign"\: "Detailed analysis of sun sign \(</span>{positions.Sun?.sign}) at <span class="math-inline">\{positions\.Sun?\.degree\}°</span>{positions.Sun?.minutes}'",
-            "Moon Sign": "Analysis of moon sign (${positions.Moon?.sign}) at <span class="math-inline">\{positions\.Moon?\.degree\}°</span>{positions.Moon?.minutes}'",
-            "Rising Sign": "Analysis of ascendant (${positions.Ascendant?.sign}) at <span class="math-inline">\{positions\.Ascendant?\.degree\}°</span>{positions.Ascendant?.minutes}'",
+        ${JSON.stringify(positions, null, 2)}
+
+        Generate an astrological interpretation as perfectly formatted JSON using exactly this structure:
+        {
+          "summary": "A 2-3 sentence overview of the chart's main themes",
+          "details": {
+            "Sun Sign": "Detailed analysis of sun sign (${positions.Sun?.sign}) at ${positions.Sun?.degree}°${positions.Sun?.minutes}'",
+            "Moon Sign": "Analysis of moon sign (${positions.Moon?.sign}) at ${positions.Moon?.degree}°${positions.Moon?.minutes}'",
+            "Rising Sign": "Analysis of ascendant (${positions.Ascendant?.sign}) at ${positions.Ascendant?.degree}°${positions.Ascendant?.minutes}'",
             "Planetary Positions": "Analysis of each planet's exact position and their significance",
             "House Placements": "Analysis of house cusps and planetary placements",
             "Major Aspects": "Analysis of the major aspects between planets calculated above",
