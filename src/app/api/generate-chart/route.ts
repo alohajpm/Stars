@@ -61,6 +61,8 @@ try {
 } catch (error){
     console.error("Error Registering Font:", error)
 }
+
+// Corrected symbol mappings:
 const planetSymbols: { [key: string]: string } = {
     Sun: 'S',
     Moon: 'M',
@@ -69,26 +71,57 @@ const planetSymbols: { [key: string]: string } = {
     Mars: 'A',
     Jupiter: 'J',
     Saturn: 'H',
-    Uranus: 'U',
-    Neptune: 'N',
+    Uranus: 'G', // Corrected Uranus
+    Neptune: 'O', // Corrected Neptune
     Pluto: 'P',
     Ascendant: 'Z'
 };
 
 const zodiacSymbols: { [key: string]: string } = {
     'Aries': 'a',
-    'Taurus': 's',
-    'Gemini': 'd',
-    'Cancer': 'f',
-    'Leo': 'g',
-    'Virgo': 'h',
-    'Libra': 'j',
-    'Scorpio': 'k',
-    'Sagittarius': 'l',
-    'Capricorn': 'z',
-    'Aquarius': 'x',
-    'Pisces': 'c',
+    'Taurus': 'b', // Corrected Taurus
+    'Gemini': 'c', // Corrected Gemini
+    'Cancer': 'd',
+    'Leo': 'e',
+    'Virgo': 'f',
+    'Libra': 'g',
+    'Scorpio': 'h',
+    'Sagittarius': 'i', // Corrected Sagittarius
+    'Capricorn': 'j',
+    'Aquarius': 'k',
+    'Pisces': 'l',
 };
+
+// --- Aspect Calculation ---
+
+// Function to calculate the angular distance between two planets.
+function calculateAngleDifference(angle1: number, angle2: number): number {
+    let diff = (angle2 - angle1 + 180) % 360 - 180;
+    return diff < -180 ? diff + 360 : diff;
+}
+
+// Function to determine if two planets form a major aspect.
+function isMajorAspect(angleDiff: number): { isAspect: boolean; aspectType?: string } {
+    const aspects = {
+        conjunction: { angle: 0, orb: 8 },
+        sextile: { angle: 60, orb: 6 },
+        square: { angle: 90, orb: 8 },
+        trine: { angle: 120, orb: 8 },
+        opposition: { angle: 180, orb: 8 },
+    };
+
+    for (const [aspectType, aspect] of Object.entries(aspects)) {
+        if (Math.abs(angleDiff - aspect.angle) <= aspect.orb) {
+            return { isAspect: true, aspectType };
+        }
+      if (Math.abs(angleDiff + aspect.angle) <= aspect.orb){
+        return {isAspect: true, aspectType};
+      }
+    }
+
+    return { isAspect: false };
+}
+
 
 // --- Main API Route ---
 
@@ -184,6 +217,9 @@ export async function POST(request: Request) {
         });
 
        // --- Plot Planets ---
+       // Create a map to store planet positions for aspect calculations
+        const planetPositions: { [key: string]: number } = {};
+
         Object.entries(positions).forEach(([key, data]: [string, any]) => {
              if (planetSymbols[key] && data?.sign && typeof data.degree === 'number') {
                 const signIndex = zodiacSigns.indexOf(data.sign);
@@ -214,9 +250,44 @@ export async function POST(request: Request) {
                       centerX + degreeRadius * Math.cos(planetAngle),
                       centerY + degreeRadius * Math.sin(planetAngle)
                   );
+
+                  // Store the planet's angle in degrees for aspect calculation.
+                  planetPositions[key] = signIndex * 30 + data.degree;
                 }
             }
         });
+
+        // --- Draw Aspect Lines ---
+          const aspectColors = {
+            conjunction: 'green',
+            sextile: 'blue',
+            square: 'red',
+            trine: 'green',
+            opposition: 'red',
+        };
+
+        // Iterate through all planet combinations to check for aspects.
+      for (const planet1 in planetPositions) {
+        for (const planet2 in planetPositions) {
+          if (planet1 !== planet2) {
+            const angleDiff = calculateAngleDifference(planetPositions[planet1], planetPositions[planet2]);
+            const aspect = isMajorAspect(angleDiff);
+
+              if (aspect.isAspect && aspect.aspectType) {
+                //   console.log("Aspect Found:", aspect, "between", planet1, planet2)
+                  const planet1Angle = (planetPositions[planet1] / 180) * Math.PI;
+                  const planet2Angle = (planetPositions[planet2] / 180) * Math.PI;
+
+                  const x1 = centerX + planetRadius * Math.cos(planet1Angle);
+                  const y1 = centerY + planetRadius * Math.sin(planet1Angle);
+                  const x2 = centerX + planetRadius * Math.cos(planet2Angle);
+                  const y2 = centerY + planetRadius * Math.sin(planet2Angle);
+
+                  drawLine(ctx, x1, y1, x2, y2, aspectColors[aspect.aspectType as keyof typeof aspectColors], 1); // Draw aspect line
+              }
+          }
+        }
+      }
 
         // Convert canvas to base64 image
         const imageDataUrl = canvas.toDataURL('image/png');
