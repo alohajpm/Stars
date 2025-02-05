@@ -77,7 +77,7 @@ const stateTimezones: { [key: string]: string } = {
     'SC': 'America/New_York',
     'SD': 'America/Chicago',
     'TN': 'America/Chicago',
-    'TX': 'America/Chicago', // Added Texas
+    'TX': 'America/Chicago',
     'UT': 'America/Denver',
     'VA': 'America/New_York',
     'VT': 'America/New_York',
@@ -124,7 +124,7 @@ function calculateChartPositions(date: string, time: string, place: string) {
         };
 
 
-        const timezone = stateTimezones[state.toUpperCase()]; // Consistent uppercase
+        const timezone = stateTimezones[state.toUpperCase()];
         if (!timezone) {
             throw new Error(`Unknown timezone for state: ${state}`);
         }
@@ -139,7 +139,7 @@ function calculateChartPositions(date: string, time: string, place: string) {
         const observer = new Astronomy.Observer(coordinates.lat, coordinates.lng, 0);
         const positions: any = {};
 
-        // Calculate house cusps first as they're faster
+        // Calculate house cusps first
         const sidereal = Astronomy.SiderealTime(date_obj);
         const ascendantLongitude = ((sidereal + coordinates.lng / 15) * 15 + 180) % 360;
         positions.Ascendant = getZodiacPosition(ascendantLongitude);
@@ -192,12 +192,12 @@ function calculateChartPositions(date: string, time: string, place: string) {
 
     } catch (error) {
         console.error('Error in calculateChartPositions:', error);
-        throw error; // Re-throw the error ONLY.  Do NOT also return.
+        // Return an error object, do NOT re-throw.
+        return { error: error instanceof Error ? error.message : 'Unknown error' };
     }
 }
 
 export async function POST(request: Request) {
-
     console.log('Request Method:', request.method);
     if (request.method !== 'POST') {
         return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
@@ -216,11 +216,19 @@ export async function POST(request: Request) {
         }
 
         const positions = calculateChartPositions(birthDate, birthTime, place);
+
+        // Check if calculateChartPositions returned an error object.
+        if (positions.error) {
+            return NextResponse.json(
+                { error: 'Failed to calculate chart positions', details: positions.error },
+                { status: 500 }
+            );
+        }
+
         return NextResponse.json(positions);
 
     } catch (error) {
         console.error('API Error:', error);
-        // Correct error handling: NextResponse.json in the API handler's catch.
         return NextResponse.json(
             {
                 error: 'Failed to calculate chart positions',
