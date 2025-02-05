@@ -1,6 +1,6 @@
 // src/app/layout.tsx
 import type { Metadata } from 'next'
-import { Geist, GeistMono, Montserrat, Lora } from 'next/font/google' // Import Montserrat and Lora
+import { Geist, Montserrat, Lora } from 'next/font/google' // Import Montserrat and Lora
 import localFont from 'next/font/local'
 import './globals.css'
 
