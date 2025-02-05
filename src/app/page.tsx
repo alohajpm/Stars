@@ -110,13 +110,13 @@ const HomePage = () => {
         return (
             <div className="mb-4 border rounded-lg overflow-hidden bg-white/95">
                 <div
-                    className="flex justify-between items-center p-4 bg-purple-50 cursor-pointer hover:bg-purple-100 transition-colors"
+                    className="flex justify-between items-center p-4 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors"
                     onClick={() => setExpanded(!expanded)}
                 >
-                    <h3 className="text-lg font-semibold text-purple-900">
+                    <h3 className="text-lg font-semibold text-blue-900">
                         {title}
                     </h3>
-                    <span className="text-2xl text-purple-700">
+                    <span className="text-2xl text-blue-700">
                         {expanded ? "−" : "+"}
                     </span>
                 </div>
@@ -133,7 +133,7 @@ const HomePage = () => {
 
     const AstrologyBackground = () => (
         <div className="fixed inset-0 z-[-1]">
-            <div className="absolute inset-0 bg-gradient-to-b from-indigo-900 via-purple-900 to-black" />
+            <div className="absolute inset-0 bg-gradient-to-b from-indigo-900 via-blue-900 to-black" />
             <div
                 className="absolute inset-0 opacity-40 bg-cover bg-center"
                 style={{
@@ -150,7 +150,7 @@ const HomePage = () => {
                 <AstrologyBackground />
                 <div className="bg-white/95 backdrop-blur-sm shadow-xl rounded-lg">
                     <div className="p-8">
-                        <h1 className="text-3xl font-serif text-center mb-6 text-purple-900">
+                        <h1 className="text-3xl font-serif text-center mb-6 text-blue-900">
                             Your Astrological Chart
                         </h1>
                         <p className="text-xl text-center mb-8 text-gray-800 leading-relaxed">
@@ -188,7 +188,7 @@ const HomePage = () => {
                                 setError("");
                                 setChartImage(null);
                             }}
-                            className="mt-8 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors mx-auto block"
+                            className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mx-auto block"
                         >
                             ← Start Over
                         </button>
@@ -204,7 +204,7 @@ const HomePage = () => {
             <div className="max-w-xl mx-auto">
                 <div className="bg-white/90 backdrop-blur-sm shadow-xl rounded-lg">
                     <div className="p-8">
-                        <h1 className="text-3xl font-serif text-center mb-8 text-purple-900">
+                        <h1 className="text-3xl font-serif text-center mb-8 text-blue-900">
                             Discover Your Astrological Chart
                         </h1>
                         {error && (
@@ -226,7 +226,7 @@ const HomePage = () => {
                                     value={birthDate}
                                     onChange={(e) => setBirthDate(e.target.value)}
                                     required
-                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900"
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
                                 />
                             </div>
 
@@ -244,7 +244,7 @@ const HomePage = () => {
                                     onChange={(e) => setBirthTime(e.target.value)}
                                     required
                                     style={{ colorScheme: "light" }}
-                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900"
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
                                 />
                             </div>
 
@@ -262,14 +262,14 @@ const HomePage = () => {
                                     value={place}
                                     onChange={(e) => setPlace(e.target.value)}
                                     required
-                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900"
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
                                 />
                             </div>
 
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
                             >
                                 {loading ? (
                                     <>
