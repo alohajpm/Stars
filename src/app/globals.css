@@ -30,12 +30,12 @@ body {
   }
 
   .body-text {
-    @apply leading-relaxed text-black-800 dark:text-black-800;
+    @apply leading-relaxed text-black dark:text-black;
     font-family: var(--font-lora);
   }
 
   .summary-text {
-    @apply text-xl text-center mb-8 leading-relaxed text-black-800 dark:text-black-800;
+    @apply text-xl text-center mb-8 leading-relaxed text-black dark:text-black;
     font-family: var(--font-lora);
   }
 
