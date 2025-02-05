@@ -127,33 +127,35 @@ function calculateChartPositions(date: string, time: string, place: string) {
         console.log('Using timezone:', timezone);
 
         const datetime = moment.tz(`${date} ${time}`, timezone);
-        const date_obj = new Date(datetime.format());
-        
         console.log('Parsed datetime:', datetime.format());
 
-        const observer = new Astronomy.Observer(
-            coordinates.lat,
-            coordinates.lng,
-            0 // elevation
+        // Calculate Julian date
+        const jd = Astronomy.MakeTime(
+            datetime.year(),
+            datetime.month() + 1,
+            datetime.date(),
+            datetime.hour(),
+            datetime.minute(),
+            datetime.second()
         );
 
+        // Calculate positions
+        const positions: any = {};
+
         // Calculate Sun position
-        const sun = Astronomy.GeoVector(Astronomy.Body.Sun, date_obj, observer);
-        const sunLongitude = Astronomy.EclipticLongitude(sun);
-        
+        const sunPos = Astronomy.SunPosition(jd);
+        const sunLongitude = (Astronomy.EclipticLongitude(sunPos) * 180 / Math.PI) % 360;
+        positions.Sun = getZodiacPosition(sunLongitude);
+
         // Calculate Moon position
-        const moon = Astronomy.GeoVector(Astronomy.Body.Moon, date_obj, observer);
-        const moonLongitude = Astronomy.EclipticLongitude(moon);
+        const moonPos = Astronomy.GeoMoon(jd);
+        const moonLongitude = (Astronomy.EclipticLongitude(moonPos) * 180 / Math.PI) % 360;
+        positions.Moon = getZodiacPosition(moonLongitude);
 
         // Calculate Ascendant
-        const siderealTime = Astronomy.SiderealTime(date_obj);
-        const ascendantLongitude = ((siderealTime + coordinates.lng/15) * 15 + 180) % 360;
-
-        const positions: any = {
-            Sun: getZodiacPosition(sunLongitude),
-            Moon: getZodiacPosition(moonLongitude),
-            Ascendant: getZodiacPosition(ascendantLongitude)
-        };
+        const lst = Astronomy.SiderealTime(jd);
+        const ascendantLongitude = (lst * 15 + coordinates.lng + 180) % 360;
+        positions.Ascendant = getZodiacPosition(ascendantLongitude);
 
         // Calculate houses
         positions.Houses = Array(12).fill(0).map((_, i) => {
@@ -165,22 +167,28 @@ function calculateChartPositions(date: string, time: string, place: string) {
         });
 
         // Calculate other planets
-        const planets = {
-            Mercury: Astronomy.Body.Mercury,
-            Venus: Astronomy.Body.Venus,
-            Mars: Astronomy.Body.Mars,
-            Jupiter: Astronomy.Body.Jupiter,
-            Saturn: Astronomy.Body.Saturn,
-            Uranus: Astronomy.Body.Uranus,
-            Neptune: Astronomy.Body.Neptune,
-            Pluto: Astronomy.Body.Pluto
+        const planetCalcs = {
+            Mercury: Astronomy.GeoMercury,
+            Venus: Astronomy.GeoVenus,
+            Mars: Astronomy.GeoMars,
+            Jupiter: Astronomy.GeoJupiter,
+            Saturn: Astronomy.GeoSaturn,
+            Uranus: Astronomy.GeoUranus,
+            Neptune: Astronomy.GeoNeptune,
+            Pluto: null // Pluto calculation needs special handling
         };
 
-        Object.entries(planets).forEach(([planet, body]) => {
-            const vector = Astronomy.GeoVector(body, date_obj, observer);
-            const longitude = Astronomy.EclipticLongitude(vector);
-            positions[planet] = getZodiacPosition(longitude);
+        Object.entries(planetCalcs).forEach(([planet, calcFunc]) => {
+            if (calcFunc) {
+                const pos = calcFunc(jd);
+                const longitude = (Astronomy.EclipticLongitude(pos) * 180 / Math.PI) % 360;
+                positions[planet] = getZodiacPosition(longitude);
+            }
         });
+
+        // Special handling for Pluto (approximate)
+        const plutoLongitude = (sunLongitude + 248) % 360; // Rough approximation
+        positions.Pluto = getZodiacPosition(plutoLongitude);
 
         console.timeEnd("calculateChartPositions");
         return positions;
