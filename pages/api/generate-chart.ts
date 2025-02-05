@@ -1,36 +1,15 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createCanvas, CanvasRenderingContext2D } from 'canvas';
-import fs from 'fs';
-import path from 'path';
 
-// --- Type Definitions ---
-type CityData = { // These types are used for loading city data
-  name: string;
-  state_code: string;
-  lat: string;
-  lng: string;
-};
-type CityCoordinates = {
-    [cityState: string]: {
-        lat: number;
-        lng: number;
-    };
+export const config = {
+    api: {
+        bodyParser: {
+            sizeLimit: '4mb',
+        },
+        responseLimit: false,
+    },
 };
 
-// --- Read cities data (same as in calculate-positions)---
-const publicDir = path.join(process.cwd(), 'public');
-const citiesFilePath = path.join(publicDir, 'cities.json');
-const citiesData = fs.readFileSync(citiesFilePath, 'utf8');
-const cities = JSON.parse(citiesData);
-
-const cityCoordinates: CityCoordinates = (cities as CityData[]).reduce((acc: CityCoordinates, city: CityData) => {
-  const key = `${city.name.toUpperCase()}, ${city.state_code.toUpperCase()}`;
-  acc[key] = { lat: parseFloat(city.lat), lng: parseFloat(city.lng) };
-  return acc;
-}, {} as CityCoordinates);
-
-
-// --- Helper Function ---
 function drawCircle(
     context: CanvasRenderingContext2D,
     x: number,
@@ -44,22 +23,58 @@ function drawCircle(
     context.fill();
 }
 
-export default async function handler(
-    req: NextApiRequest,
-    res: NextApiResponse
+function drawSymbol(
+    context: CanvasRenderingContext2D,
+    symbol: string,
+    x: number,
+    y: number,
+    fontSize: number = 14
 ) {
+    context.font = `${fontSize}px Arial`;
+    context.fillStyle = 'black';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(symbol, x, y);
+}
+
+const planetSymbols: { [key: string]: string } = {
+    Sun: '☉',
+    Moon: '☽',
+    Mercury: '☿',
+    Venus: '♀',
+    Mars: '♂',
+    Jupiter: '♃',
+    Saturn: '♄',
+    Uranus: '♅',
+    Neptune: '♆',
+    Pluto: '♇',
+};
+
+const zodiacSymbols: { [key: string]: string } = {
+    'Aries': '♈',
+    'Taurus': '♉',
+    'Gemini': '♊',
+    'Cancer': '♋',
+    'Leo': '♌',
+    'Virgo': '♍',
+    'Libra': '♎',
+    'Scorpio': '♏',
+    'Sagittarius': '♐',
+    'Capricorn': '♑',
+    'Aquarius': '♒',
+    'Pisces': '♓',
+};
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {
-        res.setHeader('Allow', ['POST']);
-        return res.status(405).end(`Method ${req.method} Not Allowed`);
+        return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
     }
 
     try {
         const { positions } = req.body;
 
         if (!positions) {
-            return res
-                .status(400)
-                .json({ error: 'Astrological positions are required.' });
+            return res.status(400).json({ error: 'Positions data is required' });
         }
 
         const width = 800;
@@ -67,89 +82,92 @@ export default async function handler(
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
 
-        ctx.fillStyle = 'white';
+        // Set white background
+        ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, width, height);
-
-        const zodiacSigns = [
-            'Aries',
-            'Taurus',
-            'Gemini',
-            'Cancer',
-            'Leo',
-            'Virgo',
-            'Libra',
-            'Scorpio',
-            'Sagittarius',
-            'Capricorn',
-            'Aquarius',
-            'Pisces',
-        ];
-        const angles = zodiacSigns.map(
-            (_, index) => (index * 2 * Math.PI) / zodiacSigns.length
-        );
 
         const centerX = width / 2;
         const centerY = height / 2;
-        const radius = Math.min(centerX, centerY) * 0.85;
+        const outerRadius = Math.min(centerX, centerY) * 0.85;
+        const innerRadius = outerRadius * 0.6;
 
-        ctx.strokeStyle = 'gray';
-        ctx.lineWidth = 1;
-        angles.forEach((angle) => {
-            const x1 = centerX + radius * Math.cos(angle);
-            const y1 = centerY + radius * Math.sin(angle);
-            const x2 = centerX;
-            const y2 = centerY;
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.stroke();
-        });
+        // Draw outer circle
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, outerRadius, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
 
-        ctx.fillStyle = 'black';
-        ctx.font = 'bold 16px Arial';
+        // Draw inner circle
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Draw zodiac segments
+        const zodiacSigns = Object.keys(zodiacSymbols);
+        const segmentAngle = (2 * Math.PI) / 12;
+
         zodiacSigns.forEach((sign, i) => {
-            const angle = (angles[i] + angles[i + 1]) / 2;
-            const labelRadius = radius * 1.1;
-            const x = centerX + labelRadius * Math.cos(angle);
-            const y = centerY + labelRadius * Math.sin(angle) + 8;
-            ctx.textAlign = 'center';
-            ctx.fillText(sign, x, y);
+            const startAngle = i * segmentAngle;
+            const endAngle = (i + 1) * segmentAngle;
+            const midAngle = (startAngle + endAngle) / 2;
+
+            // Draw segment lines
+            ctx.beginPath();
+            ctx.moveTo(
+                centerX + innerRadius * Math.cos(startAngle),
+                centerY + innerRadius * Math.sin(startAngle)
+            );
+            ctx.lineTo(
+                centerX + outerRadius * Math.cos(startAngle),
+                centerY + outerRadius * Math.sin(startAngle)
+            );
+            ctx.stroke();
+
+            // Draw zodiac symbols
+            const symbolRadius = (outerRadius + innerRadius) / 2;
+            const symbolX = centerX + symbolRadius * Math.cos(midAngle);
+            const symbolY = centerY + symbolRadius * Math.sin(midAngle);
+            drawSymbol(ctx, zodiacSymbols[sign], symbolX, symbolY, 20);
         });
-const planets = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
 
-        for (const planet of planets) {
-            // Check for undefined and missing degree
-            if (!positions[planet] || typeof positions[planet].degree !== 'number') {
-              continue;
+        // Plot planets
+        Object.entries(positions).forEach(([planet, data]) => {
+            if (planet !== 'Houses' && planetSymbols[planet] && data.sign && typeof data.degree === 'number') {
+                const signIndex = zodiacSigns.indexOf(data.sign);
+                if (signIndex !== -1) {
+                    const planetAngle = ((signIndex * 30 + data.degree) / 180) * Math.PI;
+                    const planetRadius = innerRadius * 0.8;
+                    const x = centerX + planetRadius * Math.cos(planetAngle);
+                    const y = centerY + planetRadius * Math.sin(planetAngle);
+
+                    // Draw planet symbol
+                    const symbol = planetSymbols[planet];
+                    drawCircle(ctx, x, y, 10, '#FFFFFF');
+                    drawCircle(ctx, x, y, 9, '#4A90E2');
+                    drawSymbol(ctx, symbol, x, y);
+
+                    // Add degree text
+                    const textRadius = innerRadius * 0.6;
+                    const textX = centerX + textRadius * Math.cos(planetAngle);
+                    const textY = centerY + textRadius * Math.sin(planetAngle);
+                    ctx.font = '12px Arial';
+                    ctx.fillStyle = '#000000';
+                    ctx.fillText(`${data.degree}°`, textX, textY);
+                }
             }
-            const signIndex = zodiacSigns.indexOf(positions[planet].sign);
-            // Check that the sign was found
-            if (signIndex === -1) {
-              continue;
-            }
+        });
 
-            const degreeInSign = positions[planet].degree;
-            const angle = ((signIndex * 30 + degreeInSign) / 180) * Math.PI;
-            const x = centerX + radius * 0.85 * Math.cos(angle);
-            const y = centerY + radius * 0.85 * Math.sin(angle);
+        // Convert canvas to base64 image
+        const imageDataUrl = canvas.toDataURL('image/png');
+        
+        return res.status(200).json({ image: imageDataUrl });
 
-            drawCircle(ctx, x, y, 5, 'blue'); // Draw planet
-
-            ctx.font = '12px Arial';
-            ctx.fillStyle = 'black';
-            ctx.textAlign = 'center';
-            ctx.fillText(planet, x, y - 10); // Label planet
-        }
-
-
-        const imageDataURL = canvas.toDataURL('image/png');
-        res.status(200).json({ image: imageDataURL });
     } catch (error) {
         console.error('Error generating chart:', error);
-        res.status(500).json({
-            error: 'Failed to generate chart',
-            details:
-                error instanceof Error ? error.message : 'Unknown error',
+        return res.status(500).json({
+            error: 'Failed to generate chart image',
+            details: error instanceof Error ? error.message : 'Unknown error'
         });
     }
 }
