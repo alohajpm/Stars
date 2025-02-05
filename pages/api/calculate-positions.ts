@@ -130,18 +130,33 @@ function calculateChartPositions(date: string, time: string, place: string) {
         console.log('Parsed datetime:', datetime.format());
 
         // Convert to Julian date
-        const jd = new Astronomy.Time(datetime.toDate());
+        const jd = Astronomy.MakeJulianDay(
+            datetime.year(),
+            datetime.month() + 1,
+            datetime.date(),
+            datetime.hour() + datetime.minute() / 60
+        );
 
         // Calculate positions
         const positions: any = {};
 
         // Calculate Sun position
-        const sunLongitude = (Astronomy.SunLongitude(jd) * 180 / Math.PI) % 360;
-        positions.Sun = getZodiacPosition(sunLongitude);
+        try {
+            const sunLongitude = (Astronomy.SunLongitude(jd) * 180 / Math.PI) % 360;
+            positions.Sun = getZodiacPosition(sunLongitude);
+        } catch (error) {
+            console.error('Error calculating Sun position:', error);
+            throw new Error('Failed to calculate Sun position');
+        }
 
         // Calculate Moon position
-        const moonLongitude = (Astronomy.MoonLongitude(jd) * 180 / Math.PI) % 360;
-        positions.Moon = getZodiacPosition(moonLongitude);
+        try {
+            const moonLongitude = (Astronomy.MoonLongitude(jd) * 180 / Math.PI) % 360;
+            positions.Moon = getZodiacPosition(moonLongitude);
+        } catch (error) {
+            console.error('Error calculating Moon position:', error);
+            throw new Error('Failed to calculate Moon position');
+        }
 
         // Calculate Ascendant
         const lst = Astronomy.SiderealTime(jd);
@@ -157,34 +172,37 @@ function calculateChartPositions(date: string, time: string, place: string) {
             };
         });
 
-        // Calculate other planets using direct longitude functions
+        // Calculate other planets
         const planetCalculations = {
-            Mercury: () => Astronomy.EclipticLongitude(Astronomy.HelioVector(Astronomy.Body.Mercury, jd)),
-            Venus: () => Astronomy.EclipticLongitude(Astronomy.HelioVector(Astronomy.Body.Venus, jd)),
-            Mars: () => Astronomy.EclipticLongitude(Astronomy.HelioVector(Astronomy.Body.Mars, jd)),
-            Jupiter: () => Astronomy.EclipticLongitude(Astronomy.HelioVector(Astronomy.Body.Jupiter, jd)),
-            Saturn: () => Astronomy.EclipticLongitude(Astronomy.HelioVector(Astronomy.Body.Saturn, jd)),
-            Uranus: () => Astronomy.EclipticLongitude(Astronomy.HelioVector(Astronomy.Body.Uranus, jd)),
-            Neptune: () => Astronomy.EclipticLongitude(Astronomy.HelioVector(Astronomy.Body.Neptune, jd)),
+            Mercury: Astronomy.Body.Mercury,
+            Venus: Astronomy.Body.Venus,
+            Mars: Astronomy.Body.Mars,
+            Jupiter: Astronomy.Body.Jupiter,
+            Saturn: Astronomy.Body.Saturn,
+            Uranus: Astronomy.Body.Uranus,
+            Neptune: Astronomy.Body.Neptune
         };
 
-        Object.entries(planetCalculations).forEach(([planet, calcFunc]) => {
+        Object.entries(planetCalculations).forEach(([planet, body]) => {
             try {
-                const longitude = (calcFunc() * 180 / Math.PI) % 360;
+                const vector = Astronomy.HelioVector(body, jd);
+                const longitude = (Astronomy.EclipticLongitude(vector) * 180 / Math.PI) % 360;
                 positions[planet] = getZodiacPosition(longitude);
             } catch (error) {
-                console.error(`Error calculating position for ${planet}:`, error);
-                // Fallback to approximate position based on sun
-                const approxLongitude = (sunLongitude + (Object.keys(planetCalculations).indexOf(planet) + 1) * 30) % 360;
+                console.error(`Error calculating ${planet} position:`, error);
+                // Use an approximation based on the Sun's position
+                const offset = Object.keys(planetCalculations).indexOf(planet) + 1;
+                const approxLongitude = (positions.Sun.degree + offset * 30) % 360;
                 positions[planet] = getZodiacPosition(approxLongitude);
             }
         });
 
-        // Approximate Pluto position (since it's not in the astronomy-engine)
-        const plutoLongitude = (sunLongitude + 248) % 360;
+        // Approximate Pluto (since it's not in astronomy-engine)
+        const plutoLongitude = (positions.Sun.degree + 248) % 360;
         positions.Pluto = getZodiacPosition(plutoLongitude);
 
         console.timeEnd("calculateChartPositions");
+        console.log('Calculated positions:', positions);
         return positions;
 
     } catch (error) {
