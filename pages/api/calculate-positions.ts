@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import moment from 'moment-timezone';
-import cities from '../../../../public/cities.json'; // Correct path
+import cities from './cities.json';
 import * as Astronomy from 'astronomy-engine';
 
 // --- Type Definitions (Same as before) ---
