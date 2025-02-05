@@ -18,25 +18,26 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  /* Removed font-family from body */
 }
 
 h1 {
-    font-family: var(--font-great-vibes); /* Corrected variable name */
-    /* Other styles for h1 */
+    font-family: var(--font-great-vibes);
 }
 
 h2, h3, .subheading {
-    font-family: var(--font-montserrat); /* Corrected variable name */
-    /* Other styles for subheadings */
+    font-family: var(--font-montserrat);
 }
 
 p, .body-text {
-    font-family: var(--font-lora); /* Corrected variable name */
-    /* Other styles for body text */
+    font-family: var(--font-lora);
 }
 
-/* Example of more specific styles (optional, but good practice): */
+/* More specific selector for text inside expandable sections */
+.expandable-section-content p { /* Target <p> tags inside elements with this class */
+    color: var(--foreground); /* Or any other color you want */
+}
+
+/* Other styles (as before) */
 .summary-text {
     font-family: var(--font-lora);
     font-size: 1.2em;
@@ -45,5 +46,5 @@ p, .body-text {
 
 .expandable-section-title {
     font-family: var(--font-montserrat);
-    font-weight: 700; /* Use bold for section titles */
+    font-weight: 700;
 }
