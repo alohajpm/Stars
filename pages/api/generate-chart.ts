@@ -267,7 +267,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const radius = Math.min(centerX, centerY) * 0.85;
 
       // Function to draw a circle
-      function drawCircle(context, x: number, y: number, radius: number, color: string) {
+      function drawCircle(context: CanvasRenderingContext2D, x: number, y: number, radius: number, color: string) {
         context.beginPath();
         context.arc(x, y, radius, 0, 2 * Math.PI, false);
         context.fillStyle = color;
