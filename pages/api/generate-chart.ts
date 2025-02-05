@@ -4,13 +4,12 @@ import fs from 'fs';
 import path from 'path';
 
 // --- Type Definitions ---
-type CityData = {
-    name: string;
-    state_code: string;
-    lat: string;
-    lng: string;
+type CityData = { // These types are used for loading city data
+  name: string;
+  state_code: string;
+  lat: string;
+  lng: string;
 };
-
 type CityCoordinates = {
     [cityState: string]: {
         lat: number;
@@ -18,39 +17,18 @@ type CityCoordinates = {
     };
 };
 
-type Planet =
-    | 'Sun'
-    | 'Moon'
-    | 'Ascendant'
-    | 'Mercury'
-    | 'Venus'
-    | 'Mars'
-    | 'Jupiter'
-    | 'Saturn'
-    | 'Uranus'
-    | 'Neptune'
-    | 'Pluto';
-
-type ZodiacPosition = {
-    sign: string;
-    degree: number;
-    minutes: number;
-};
-
-// --- Read cities data ---
+// --- Read cities data (same as in calculate-positions)---
 const publicDir = path.join(process.cwd(), 'public');
 const citiesFilePath = path.join(publicDir, 'cities.json');
 const citiesData = fs.readFileSync(citiesFilePath, 'utf8');
 const cities = JSON.parse(citiesData);
 
-const cityCoordinates: CityCoordinates = (cities as CityData[]).reduce(
-    (acc: CityCoordinates, city: CityData) => {
-        const key = `${city.name.toUpperCase()}, ${city.state_code.toUpperCase()}`;
-        acc[key] = { lat: parseFloat(city.lat), lng: parseFloat(city.lng) };
-        return acc;
-    },
-    {} as CityCoordinates
-);
+const cityCoordinates: CityCoordinates = (cities as CityData[]).reduce((acc: CityCoordinates, city: CityData) => {
+  const key = `${city.name.toUpperCase()}, ${city.state_code.toUpperCase()}`;
+  acc[key] = { lat: parseFloat(city.lat), lng: parseFloat(city.lng) };
+  return acc;
+}, {} as CityCoordinates);
+
 
 // --- Helper Function ---
 function drawCircle(
@@ -137,32 +115,17 @@ export default async function handler(
             ctx.textAlign = 'center';
             ctx.fillText(sign, x, y);
         });
-
-        const planets = [
-            'Sun',
-            'Moon',
-            'Mercury',
-            'Venus',
-            'Mars',
-            'Jupiter',
-            'Saturn',
-            'Uranus',
-            'Neptune',
-            'Pluto',
-        ];
+const planets = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
 
         for (const planet of planets) {
-            if (
-                !positions[planet] ||
-                typeof positions[planet].degree !== 'number'
-            ) {
-                continue;
+            // Check for undefined and missing degree
+            if (!positions[planet] || typeof positions[planet].degree !== 'number') {
+              continue;
             }
-
             const signIndex = zodiacSigns.indexOf(positions[planet].sign);
-
+            // Check that the sign was found
             if (signIndex === -1) {
-                continue;
+              continue;
             }
 
             const degreeInSign = positions[planet].degree;
@@ -170,13 +133,14 @@ export default async function handler(
             const x = centerX + radius * 0.85 * Math.cos(angle);
             const y = centerY + radius * 0.85 * Math.sin(angle);
 
-            drawCircle(ctx, x, y, 5, 'blue');
+            drawCircle(ctx, x, y, 5, 'blue'); // Draw planet
 
             ctx.font = '12px Arial';
             ctx.fillStyle = 'black';
             ctx.textAlign = 'center';
-            ctx.fillText(planet, x, y - 10);
+            ctx.fillText(planet, x, y - 10); // Label planet
         }
+
 
         const imageDataURL = canvas.toDataURL('image/png');
         res.status(200).json({ image: imageDataURL });
