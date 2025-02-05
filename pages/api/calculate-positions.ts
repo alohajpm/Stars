@@ -192,7 +192,7 @@ function calculateChartPositions(date: string, time: string, place: string) {
 
     } catch (error) {
         console.error('Error in calculateChartPositions:', error);
-        throw error; // Re-throw the error to be caught by the caller.
+        throw error; // Re-throw the error ONLY.  Do NOT also return.
     }
 }
 
@@ -220,6 +220,7 @@ export async function POST(request: Request) {
 
     } catch (error) {
         console.error('API Error:', error);
+        // Correct error handling: NextResponse.json in the API handler's catch.
         return NextResponse.json(
             {
                 error: 'Failed to calculate chart positions',
