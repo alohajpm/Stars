@@ -130,31 +130,32 @@ const HomePage = () => {
         }
     };
 
-    const ExpandableSection = ({ title, content }: { title: string; content: string }) => {
+    // Modified ExpandableSection: Accepts ReactNode for title and content
+    const ExpandableSection = ({ title, content }: { title: React.ReactNode; content: React.ReactNode }) => {
         const [expanded, setExpanded] = useState(false);
-      return (
-          // Use classNames for styling.  Much cleaner than inline styles.
-          <div className="mb-4 border rounded-lg overflow-hidden bg-white/95">
-              <div
-                  className="flex justify-between items-center p-4 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors"
-                  onClick={() => setExpanded(!expanded)}
-              >
-                  <h3 className="text-lg font-semibold text-blue-900 subheading">
-                      {title}
-                  </h3>
-                  <span className="text-2xl text-blue-700">
-                      {expanded ? "−" : "+"}
-                  </span>
-              </div>
-              {expanded && (
-                  <div className="p-4 bg-white">
-                      <p className="body-text leading-relaxed whitespace-pre-wrap">
-                          {content}
-                      </p>
-                  </div>
-              )}
-          </div>
-      );
+
+        return (
+            <div className="mb-4 border rounded-lg overflow-hidden bg-white/95">
+                <div
+                    className="flex justify-between items-center p-4 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors"
+                    onClick={() => setExpanded(!expanded)}
+                >
+                    <h3 className="text-lg font-semibold text-blue-900 subheading">
+                        {title}
+                    </h3>
+                    <span className="text-2xl text-blue-700">
+                        {expanded ? '−' : '+'}
+                    </span>
+                </div>
+                {expanded && (
+                    <div className="p-4 bg-white">
+                        <p className="body-text leading-relaxed whitespace-pre-wrap">
+                            {content}
+                        </p>
+                    </div>
+                )}
+            </div>
+        );
     };
 
     const AstrologyBackground = () => (
@@ -184,6 +185,7 @@ const HomePage = () => {
                         </p>
                         <div className="space-y-4">
                             {Object.entries(chartData.details).map(([section, info]) => (
+                                // Corrected: Pass strings directly, apply classes within ExpandableSection
                                 <ExpandableSection
                                     key={section}
                                     title={<span className="subheading">{section}</span>}
