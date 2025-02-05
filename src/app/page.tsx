@@ -135,7 +135,7 @@ const HomePage = () => {
         const [expanded, setExpanded] = useState(false);
 
         return (
-            <div className="mb-4 border rounded-lg overflow-hidden bg-white/95">
+            <div className="mb-4 border rounded-lg overflow-hidden">
                 <div
                     className="flex justify-between items-center p-4 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors"
                     onClick={() => setExpanded(!expanded)}
@@ -149,7 +149,7 @@ const HomePage = () => {
                 </div>
                 {expanded && (
                     // Add the class here:
-                    <div className="p-4 bg-white expandable-section-content">
+                    <div className="p-4 expandable-section-content">
                         <p className="body-text leading-relaxed">
                             {content}
                         </p>
