@@ -57,10 +57,8 @@ const HomePage = () => {
                 body: JSON.stringify({ birthDate, birthTime, place }),
             });
 
-            // *** IMPORTANT: Check res.ok *BEFORE* parsing JSON ***
             if (!positionsRes.ok) {
-                // Get the error message from the response, if any
-                const errorData = await positionsRes.json().catch(() => ({})); // Try to parse as JSON, default to empty object
+                const errorData = await positionsRes.json().catch(() => ({}));
                 const errorMessage = errorData.error || errorData.details || "Failed to calculate positions";
                 throw new Error(errorMessage);
             }
@@ -124,7 +122,8 @@ const HomePage = () => {
             }
 
             const data = await res.json();
-            setChartImage(data.image);
+            setChartImage(data.image)
+
         } catch (error) {
             console.error("Error generating chart image:", error);
             setError(error instanceof Error ? error.message : "Failed to generate chart image");
@@ -160,7 +159,7 @@ const HomePage = () => {
 
     const AstrologyBackground = () => (
         <div className="fixed inset-0 z-[-1]">
-            <div className="absolute inset-0 bg-gradient-to-b from-indigo-900 via -blue-900 to-black" />
+            <div className="absolute inset-0 bg-gradient-to-b from-indigo-900 via-blue-900 to-black" />
             <div
                 className="absolute inset-0 opacity-40 bg-cover bg-center"
                 style={{
