@@ -1,6 +1,5 @@
-// pages/api/generate-chart.ts
 import { NextApiRequest, NextApiResponse } from 'next';
-import { createCanvas } from 'canvas';
+import { createCanvas, CanvasRenderingContext2D } from 'canvas';
 import * as Astronomy from 'astronomy-engine';
 import moment from 'moment-timezone';
 import cities from '../../public/cities.json'; // Import cities.json
@@ -268,7 +267,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const radius = Math.min(centerX, centerY) * 0.85;
 
       // Function to draw a circle
-      function drawCircle(context: CanvasRenderingContext2D, x: number, y: number, radius: number, color: string) {
+      function drawCircle(context, x: number, y: number, radius: number, color: string) {
         context.beginPath();
         context.arc(x, y, radius, 0, 2 * Math.PI, false);
         context.fillStyle = color;
@@ -338,7 +337,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ctx.fillText(planet, x, y - 10);
       }
 
-      // Convert the canvas to a PNG data URL
+       // Convert the canvas to a PNG data URL
       const imageDataURL = canvas.toDataURL('image/png');
 
       // Send the image data URL in the response
