@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextResponse } from 'next/server';
 import moment from 'moment-timezone';
 import fs from 'fs';
 import path from 'path';
@@ -9,6 +9,7 @@ export const config = {
         bodyParser: {
             sizeLimit: '1mb',
         },
+        maxDuration: 300, // Set to 5 minutes
     },
 };
 
@@ -87,8 +88,8 @@ const stateTimezones: { [key: string]: string } = {
 
 function getZodiacPosition(longitude: number) {
     const signs = [
-        "Aries", "Taurus", "Gemini", "Cancer",
-        "Leo", "Virgo", "Libra", "Scorpio",
+        "Aries", "Taurus", "Gemini", "Cancer", 
+        "Leo", "Virgo", "Libra", "Scorpio", 
         "Sagittarius", "Capricorn", "Aquarius", "Pisces"
     ];
     const signIndex = Math.floor(longitude / 30) % 12;
@@ -103,7 +104,6 @@ function calculateChartPositions(date: string, time: string, place: string) {
         const [city, state] = place.split(',').map(s => s.trim());
         console.log('Parsing location:', { city, state });
 
-        // Find city data
         const cityData = cities.find(c => 
             c.name.toLowerCase() === city.toLowerCase() && 
             c.state_code === state.toUpperCase()
@@ -127,43 +127,17 @@ function calculateChartPositions(date: string, time: string, place: string) {
         console.log('Using timezone:', timezone);
 
         const datetime = moment.tz(`${date} ${time}`, timezone);
+        const date_obj = datetime.toDate();
         console.log('Parsed datetime:', datetime.format());
 
-        // Convert to Julian date
-        const jd = Astronomy.MakeJulianDay(
-            datetime.year(),
-            datetime.month() + 1,
-            datetime.date(),
-            datetime.hour() + datetime.minute() / 60
-        );
-
-        // Calculate positions
+        const observer = new Astronomy.Observer(coordinates.lat, coordinates.lng, 0);
         const positions: any = {};
 
-        // Calculate Sun position
-        try {
-            const sunLongitude = (Astronomy.SunLongitude(jd) * 180 / Math.PI) % 360;
-            positions.Sun = getZodiacPosition(sunLongitude);
-        } catch (error) {
-            console.error('Error calculating Sun position:', error);
-            throw new Error('Failed to calculate Sun position');
-        }
-
-        // Calculate Moon position
-        try {
-            const moonLongitude = (Astronomy.MoonLongitude(jd) * 180 / Math.PI) % 360;
-            positions.Moon = getZodiacPosition(moonLongitude);
-        } catch (error) {
-            console.error('Error calculating Moon position:', error);
-            throw new Error('Failed to calculate Moon position');
-        }
-
-        // Calculate Ascendant
-        const lst = Astronomy.SiderealTime(jd);
-        const ascendantLongitude = (lst * 15 + coordinates.lng + 180) % 360;
+        // Calculate house cusps first as they're faster
+        const sidereal = Astronomy.SiderealTime(date_obj);
+        const ascendantLongitude = ((sidereal + coordinates.lng/15) * 15 + 180) % 360;
         positions.Ascendant = getZodiacPosition(ascendantLongitude);
 
-        // Calculate houses
         positions.Houses = Array(12).fill(0).map((_, i) => {
             const houseLongitude = (ascendantLongitude + i * 30) % 360;
             return {
@@ -172,37 +146,42 @@ function calculateChartPositions(date: string, time: string, place: string) {
             };
         });
 
+        // Calculate Sun
+        const sun = Astronomy.Equator(Astronomy.Body.Sun, date_obj, observer, true, true);
+        const sunLongitude = (sun.lon * 180 / Math.PI) % 360;
+        positions.Sun = getZodiacPosition(sunLongitude);
+
+        // Calculate Moon
+        const moon = Astronomy.Equator(Astronomy.Body.Moon, date_obj, observer, true, true);
+        const moonLongitude = (moon.lon * 180 / Math.PI) % 360;
+        positions.Moon = getZodiacPosition(moonLongitude);
+
         // Calculate other planets
-        const planetCalculations = {
+        const planets = {
             Mercury: Astronomy.Body.Mercury,
             Venus: Astronomy.Body.Venus,
             Mars: Astronomy.Body.Mars,
             Jupiter: Astronomy.Body.Jupiter,
             Saturn: Astronomy.Body.Saturn,
             Uranus: Astronomy.Body.Uranus,
-            Neptune: Astronomy.Body.Neptune
+            Neptune: Astronomy.Body.Neptune,
+            Pluto: Astronomy.Body.Pluto
         };
 
-        Object.entries(planetCalculations).forEach(([planet, body]) => {
+        Object.entries(planets).forEach(([planet, body]) => {
             try {
-                const vector = Astronomy.HelioVector(body, jd);
-                const longitude = (Astronomy.EclipticLongitude(vector) * 180 / Math.PI) % 360;
+                const pos = Astronomy.Equator(body, date_obj, observer, true, true);
+                const longitude = (pos.lon * 180 / Math.PI) % 360;
                 positions[planet] = getZodiacPosition(longitude);
             } catch (error) {
                 console.error(`Error calculating ${planet} position:`, error);
-                // Use an approximation based on the Sun's position
-                const offset = Object.keys(planetCalculations).indexOf(planet) + 1;
-                const approxLongitude = (positions.Sun.degree + offset * 30) % 360;
+                // Use approximation if exact calculation fails
+                const approxLongitude = (sunLongitude + Object.keys(planets).indexOf(planet) * 30) % 360;
                 positions[planet] = getZodiacPosition(approxLongitude);
             }
         });
 
-        // Approximate Pluto (since it's not in astronomy-engine)
-        const plutoLongitude = (positions.Sun.degree + 248) % 360;
-        positions.Pluto = getZodiacPosition(plutoLongitude);
-
         console.timeEnd("calculateChartPositions");
-        console.log('Calculated positions:', positions);
         return positions;
 
     } catch (error) {
