@@ -106,17 +106,19 @@ function calculateChartPositions(date: string, time: string, place: string) {
         console.log('Parsing location:', { city, state });
 
         if (!cities || cities.length === 0) {
-            throw new Error('Cities data not loaded.');
+           return { error: 'Cities data not loaded.' };
         }
 
+        // Corrected cityData finding logic: Case-insensitive comparison.
         const cityData = cities.find(c =>
             c.name.toLowerCase() === city.toLowerCase() &&
-            c.state_code === state.toUpperCase()
+            c.state_code.toUpperCase() === state.toUpperCase()
         );
 
         if (!cityData) {
-            throw new Error(`City not found: ${city}, ${state}`);
+            return { error: `City not found: ${city}, ${state}` };
         }
+
 
         const coordinates = {
             lat: parseFloat(cityData.lat),
@@ -126,7 +128,7 @@ function calculateChartPositions(date: string, time: string, place: string) {
 
         const timezone = stateTimezones[state.toUpperCase()];
         if (!timezone) {
-            throw new Error(`Unknown timezone for state: ${state}`);
+          return { error: `Unknown timezone for state: ${state}` };
         }
 
         console.log('Using coordinates:', coordinates);
@@ -192,7 +194,6 @@ function calculateChartPositions(date: string, time: string, place: string) {
 
     } catch (error) {
         console.error('Error in calculateChartPositions:', error);
-        // Return an error object, do NOT re-throw.
         return { error: error instanceof Error ? error.message : 'Unknown error' };
     }
 }
@@ -204,7 +205,7 @@ export async function POST(request: Request) {
     }
 
     try {
-        const body = await request.json();
+        const body = await request.json();  // Await the JSON parsing
         console.log("Request Body:", body);
         const { birthDate, birthTime, place } = body;
 
