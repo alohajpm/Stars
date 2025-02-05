@@ -148,12 +148,12 @@ function calculateChartPositions(date: string, time: string, place: string) {
 
         // Calculate Sun
         const sun = Astronomy.Equator(Astronomy.Body.Sun, date_obj, observer, true, true);
-        const sunLongitude = (sun.lon * 180 / Math.PI) % 360;
+        const sunLongitude = (sun.ra * 15) % 360; // Convert right ascension to longitude
         positions.Sun = getZodiacPosition(sunLongitude);
 
         // Calculate Moon
         const moon = Astronomy.Equator(Astronomy.Body.Moon, date_obj, observer, true, true);
-        const moonLongitude = (moon.lon * 180 / Math.PI) % 360;
+        const moonLongitude = (moon.ra * 15) % 360; // Convert right ascension to longitude
         positions.Moon = getZodiacPosition(moonLongitude);
 
         // Calculate other planets
@@ -171,7 +171,7 @@ function calculateChartPositions(date: string, time: string, place: string) {
         Object.entries(planets).forEach(([planet, body]) => {
             try {
                 const pos = Astronomy.Equator(body, date_obj, observer, true, true);
-                const longitude = (pos.lon * 180 / Math.PI) % 360;
+                const longitude = (pos.ra * 15) % 360; // Convert right ascension to longitude
                 positions[planet] = getZodiacPosition(longitude);
             } catch (error) {
                 console.error(`Error calculating ${planet} position:`, error);
