@@ -3,7 +3,6 @@ import Anthropic from '@anthropic-ai/sdk';
 import moment from 'moment-timezone';
 import cities from '../../../../public/cities.json'; // Update path to cities.json
 import * as Astronomy from 'astronomy-engine';
-import { type } from 'os';
 
 // Type definitions for clarity and type safety
 type CityData = {
@@ -111,6 +110,18 @@ const cityCoordinates: CityCoordinates = (cities as CityData[]).reduce((acc: Cit
   return acc;
 }, {} as CityCoordinates);
 
+function getZodiacPosition(longitude: number): ZodiacPosition {
+  const signs = [
+    "Aries", "Taurus", "Gemini", "Cancer", 
+    "Leo", "Virgo", "Libra", "Scorpio", 
+    "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+  ];
+  const signIndex = Math.floor(longitude / 30);
+  const degree = Math.floor(longitude % 30);
+  const minutes = Math.round((longitude % 1) * 60)
+  return { sign: signs[signIndex], degree, minutes };
+}
+
 function calculateChartPositions(date: string, time: string, place: string): ChartPositions {
   try {
     const [city, state] = place.split(',').map(s => s.trim());
@@ -159,22 +170,15 @@ function calculateChartPositions(date: string, time: string, place: string): Cha
     const lst = Astronomy.SiderealTime(astroTime) + coordinates.lng / 15;
     const ascendantLongitude = (lst * 15) % 360;
 
-    function getZodiacPosition(longitude: number): ZodiacPosition {
-      const signs = [
-        "Aries", "Taurus", "Gemini", "Cancer", 
-        "Leo", "Virgo", "Libra", "Scorpio", 
-        "Sagittarius", "Capricorn", "Aquarius", "Pisces"
-      ];
-      const signIndex = Math.floor(longitude / 30);
-      const degree = Math.floor(longitude % 30);
-      const minutes = Math.round((longitude % 1) * 60)
-      return { sign: signs[signIndex], degree, minutes };
-    }
+    // Cache zodiac positions
+    const sunZodiac = getZodiacPosition(sunLongitude);
+    const moonZodiac = getZodiacPosition(moonLongitude);
+    const ascendantZodiac = getZodiacPosition(ascendantLongitude);
 
     const positions: ChartPositions = {
-      Sun: getZodiacPosition(sunLongitude),
-      Moon: getZodiacPosition(moonLongitude),
-      Ascendant: getZodiacPosition(ascendantLongitude),
+      Sun: sunZodiac,
+      Moon: moonZodiac,
+      Ascendant: ascendantZodiac,
     };
 
     positions.Houses = Array(12).fill(0).map((_, i) => {
@@ -196,51 +200,47 @@ function calculateChartPositions(date: string, time: string, place: string): Cha
       Pluto: Astronomy.Body.Pluto
     };
 
-    const planets: { [key: string]: number } = {};
-
+    const planetPositions: { [key: string]: ZodiacPosition } = {};
     Object.entries(planetBodies).forEach(([planet, body]) => {
       const planetEquator = Astronomy.Equator(body, astroTime, observer, true, true);
       const planetEcliptic = Astronomy.Ecliptic(planetEquator.vec);
       const longitude = planetEcliptic.elon;
-      planets[planet] = longitude;
-      positions[planet as Planet] = getZodiacPosition(longitude);
+      planetPositions[planet] = getZodiacPosition(longitude);
     });
 
+    positions = { ...positions, ...planetPositions };
+
+    // Simplify aspect calculations
     const aspects: Aspect[] = [];
-    const MAJOR_ASPECTS = [
-      { name: 'Conjunction', angle: 0, orb: 8 },
-      { name: 'Sextile', angle: 60, orb: 6 },
-      { name: 'Square', angle: 90, orb: 8 },
-      { name: 'Trine', angle: 120, orb: 8 },
-      { name: 'Opposition', angle: 180, orb: 8 }
-    ];
+    const majorAspectAngles = [0, 60, 90, 120, 180]; // Conjunction, Sextile, Square, Trine, Opposition
+    const majorAspectOrbs = [8, 6, 8, 8, 8];
 
-    const allBodies = {
-      ...planets,
-      Sun: sunLongitude,
-      Moon: moonLongitude
-    };
+    const bodies = ['Sun', 'Moon', ...Object.keys(planetBodies)];
 
-    Object.entries(allBodies).forEach(([body1, long1], i) => {
-      Object.entries(allBodies).slice(i + 1).forEach(([body2, long2]) => {
+    for (let i = 0; i < bodies.length; i++) {
+      for (let j = i + 1; j < bodies.length; j++) {
+        const body1 = bodies[i];
+        const body2 = bodies[j];
+        const long1 = body1 === 'Sun' ? sunLongitude : body1 === 'Moon' ? moonLongitude : planetPositions[body1].degree;
+        const long2 = body2 === 'Sun' ? sunLongitude : body2 === 'Moon' ? moonLongitude : planetPositions[body2].degree;
         const diff = Math.abs(long1 - long2);
-        MAJOR_ASPECTS.forEach(aspect => {
-          const orb = Math.min(
-            Math.abs(diff - aspect.angle),
-            Math.abs(360 - Math.abs(diff - aspect.angle))
-          );
-          if (orb <= aspect.orb) {
+
+        for (let k = 0; k < majorAspectAngles.length; k++) {
+          const aspectAngle = majorAspectAngles[k];
+          const orb = majorAspectOrbs[k];
+          const aspectDiff = Math.min(Math.abs(diff - aspectAngle), 360 - Math.abs(diff - aspectAngle));
+
+          if (aspectDiff <= orb) {
             aspects.push({
               planet1: body1,
               planet2: body2,
-              aspect: aspect.name,
-              orb: orb.toFixed(1)
+              aspect: ['Conjunction', 'Sextile', 'Square', 'Trine', 'Opposition'][k],
+              orb: aspectDiff.toFixed(1),
             });
           }
-        });
-      });
-    });
-
+        }
+      }
+    }
     positions.Aspects = aspects;
 
     console.log('Calculated positions:', positions);
