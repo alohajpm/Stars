@@ -4,6 +4,8 @@
 @tailwind utilities;
 
 :root {
+  /* You *can* keep these if you want, but they're not strictly necessary
+     if you're using Tailwind's color classes.  I'll leave them in for now. */
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -16,9 +18,9 @@
 }
 
 body {
-  color: var(--foreground);
+  /* REMOVE color from here: */
+  /* color: var(--foreground);  REMOVED */
   background: var(--background);
-  font-family: var(--font-lora); /* Keep this, as it was working for the main body */
 }
 
 h1 {
@@ -34,9 +36,29 @@ p, .body-text {
 }
 
 
-/* Add this rule to specifically target the expandable section content */
-.expandable-section-content p {
-    color: var(--foreground); /* Or use a Tailwind class like text-gray-800 dark:text-gray-200 */
-}
+/* Custom Components (using Tailwind directives) */
+@layer components {
+  .heading {
+    @apply text-3xl text-center mb-6 text-blue-900;
+    font-family: var(--font-great-vibes);
+  }
 
-/* Keep any other custom styles you might have */
+  .subheading {
+    @apply text-lg font-semibold text-blue-900;
+    font-family: var(--font-montserrat);
+  }
+
+  .body-text {
+    @apply leading-relaxed; /* Keep this for line height */
+    font-family: var(--font-lora);
+     /* No text color here! Let Tailwind handle it. */
+  }
+    .expandable-section-content p {
+    @apply text-gray-700 dark:text-gray-300; /* Correct text color for light/dark mode */
+  }
+
+  .summary-text {
+      @apply text-xl text-center mb-8 leading-relaxed text-gray-800 dark:text-gray-200;
+      font-family: var(--font-lora);
+  }
+}
