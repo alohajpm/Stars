@@ -3,7 +3,23 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Remove :root and @media - let Tailwind handle dark mode */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background); /* Only background, NO color */
+  /* REMOVED font-family from here */
+}
+
 
 /* Custom Components (using Tailwind directives) */
 @layer components {
@@ -13,7 +29,7 @@
   }
 
   .subheading {
-    @apply text-lg font-semibold text-blue-900; /* Keep text-blue-900 for subheadings */
+    @apply text-lg font-semibold text-blue-900;
     font-family: var(--font-montserrat);
   }
 
@@ -23,7 +39,9 @@
   }
 
   .summary-text {
-    @apply text-xl text-center mb-8 leading-relaxed text-gray-800 dark:text-gray-200; /* Correct text color!*/
+    @apply text-xl text-center mb-8 leading-relaxed text-gray-800 dark:text-gray-200; /* Correct text color! */
     font-family: var(--font-lora);
   }
+
+  /* No need for .expandable-section-content p  anymore */
 }
