@@ -1,3 +1,4 @@
+// /src/app/api/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -27,8 +28,8 @@ const HomePage = () => {
         e.preventDefault();
         setLoading(true);
         setError("");
-        setChartData(null);
-        setChartImage(null);
+        setChartData(null);  // Reset previous data
+        setChartImage(null); // Reset previous image
 
         try {
             // 1. Calculate Positions
@@ -61,7 +62,7 @@ const HomePage = () => {
 
             // Add the calculated positions to the interpretation data
             interpretationData.calculated_positions = positionsData;
-            
+
             console.log("Received interpretation:", interpretationData);
             setChartData(interpretationData);
 
@@ -78,7 +79,7 @@ const HomePage = () => {
 
     const handleGenerateChart = async (positions?: any) => {
         const positionsToUse = positions || (chartData?.calculated_positions);
-        
+
         if (!positionsToUse) {
             setError("No chart positions available");
             return;
