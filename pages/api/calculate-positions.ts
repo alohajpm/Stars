@@ -9,7 +9,7 @@ export const config = {
         bodyParser: {
             sizeLimit: '1mb',
         },
-        maxDuration: 300, // Set to 5 minutes
+        maxDuration: 300,
     },
 };
 
@@ -148,12 +148,12 @@ function calculateChartPositions(date: string, time: string, place: string) {
 
         // Calculate Sun
         const sun = Astronomy.Equator(Astronomy.Body.Sun, date_obj, observer, true, true);
-        const sunLongitude = (sun.ra * 15) % 360; // Convert right ascension to longitude
+        const sunLongitude = (sun.ra * 15) % 360;
         positions.Sun = getZodiacPosition(sunLongitude);
 
         // Calculate Moon
         const moon = Astronomy.Equator(Astronomy.Body.Moon, date_obj, observer, true, true);
-        const moonLongitude = (moon.ra * 15) % 360; // Convert right ascension to longitude
+        const moonLongitude = (moon.ra * 15) % 360;
         positions.Moon = getZodiacPosition(moonLongitude);
 
         // Calculate other planets
@@ -171,7 +171,7 @@ function calculateChartPositions(date: string, time: string, place: string) {
         Object.entries(planets).forEach(([planet, body]) => {
             try {
                 const pos = Astronomy.Equator(body, date_obj, observer, true, true);
-                const longitude = (pos.ra * 15) % 360; // Convert right ascension to longitude
+                const longitude = (pos.ra * 15) % 360;
                 positions[planet] = getZodiacPosition(longitude);
             } catch (error) {
                 console.error(`Error calculating ${planet} position:`, error);
@@ -190,26 +190,29 @@ function calculateChartPositions(date: string, time: string, place: string) {
     }
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
-    }
-
+export async function POST(request: Request) {
     try {
-        const { birthDate, birthTime, place } = req.body;
+        const body = await request.json();
+        const { birthDate, birthTime, place } = body;
 
         if (!birthDate || !birthTime || !place) {
-            return res.status(400).json({ error: 'Missing required fields' });
+            return NextResponse.json(
+                { error: 'Missing required fields' },
+                { status: 400 }
+            );
         }
 
         const positions = calculateChartPositions(birthDate, birthTime, place);
-        return res.status(200).json(positions);
+        return NextResponse.json(positions);
 
     } catch (error) {
         console.error('API Error:', error);
-        return res.status(500).json({
-            error: 'Failed to calculate chart positions',
-            details: error instanceof Error ? error.message : 'Unknown error'
-        });
+        return NextResponse.json(
+            { 
+                error: 'Failed to calculate chart positions',
+                details: error instanceof Error ? error.message : 'Unknown error'
+            },
+            { status: 500 }
+        );
     }
 }
