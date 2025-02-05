@@ -130,7 +130,6 @@ const HomePage = () => {
         }
     };
 
-    // Corrected ExpandableSection: Uses Tailwind classes and string content.
     const ExpandableSection = ({ title, content }: { title: React.ReactNode; content: string }) => {
         const [expanded, setExpanded] = useState(false);
 
@@ -148,7 +147,7 @@ const HomePage = () => {
                     </span>
                 </div>
                 {expanded && (
-                    <div className="p-4 bg-white"> {/*Removed the extra class*/}
+                    <div className="p-4 bg-white"> {/* Removed extra class */}
                         <p className="body-text leading-relaxed">
                             {content}
                         </p>
@@ -164,7 +163,7 @@ const HomePage = () => {
             <div
                 className="absolute inset-0 opacity-40 bg-cover bg-center"
                 style={{
-                    backgroundImage: "url('https://onlysnails.com/wp-content/uploads/2025/02/Cygnus-Loop-Nebula.jpg')",
+                    backgroundImage: "url('https://onlysnails.com/wp-content/uploads/2025/02/nebula.jpg')",
                     backgroundBlendMode: "screen",
                 }}
             />
