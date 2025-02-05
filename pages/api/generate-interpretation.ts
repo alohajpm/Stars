@@ -1,15 +1,13 @@
-import { NextResponse } from 'next/server';
+// pages/api/generate-interpretation.ts
+import { NextApiRequest, NextApiResponse } from 'next';
 import Anthropic from '@anthropic-ai/sdk';
 
-export async function POST(request: Request) {
+export async function POST(request: NextApiRequest, res: NextApiResponse) {
     console.log('API route /api/generate-interpretation started');
 
     if (!process.env.ANTHROPIC_API_KEY) {
         console.error('Missing ANTHROPIC_API_KEY');
-        return NextResponse.json(
-            { error: 'Server configuration error - missing API key' },
-            { status: 500 }
-        );
+        return res.status(500).json({ error: 'Server configuration error - missing API key' });
     }
 
     try {
@@ -18,10 +16,9 @@ export async function POST(request: Request) {
 
         if (!positions) {
             console.error('Missing required fields: positions');
-            return NextResponse.json(
-                { error: 'Missing required fields: positions' },
-                { status: 400 }
-            );
+             return res.status(400).json(
+               { error: 'Missing required fields: positions' },
+             );
         }
 
         console.log('Received positions:', positions);
@@ -41,14 +38,15 @@ export async function POST(request: Request) {
                 {
                     role: 'user',
                     content: `Using these EXACT calculated positions for a natal chart:
-        <span class="math-inline">\{JSON\.stringify\(positions, null, 2\)\}
-Generate an astrological interpretation as perfectly formatted JSON using exactly this structure\:
-\{
-"summary"\: "A 2\-3 sentence overview of the chart's main themes",
-"details"\: \{
-"Sun Sign"\: "Detailed analysis of sun sign \(</span>{positions.Sun?.sign}) at <span class="math-inline">\{positions\.Sun?\.degree\}°</span>{positions.Sun?.minutes}'",
-            "Moon Sign": "Analysis of moon sign (${positions.Moon?.sign}) at <span class="math-inline">\{positions\.Moon?\.degree\}°</span>{positions.Moon?.minutes}'",
-            "Rising Sign": "Analysis of ascendant (${positions.Ascendant?.sign}) at <span class="math-inline">\{positions\.Ascendant?\.degree\}°</span>{positions.Ascendant?.minutes}'",
+        ${JSON.stringify(positions, null, 2)}
+
+        Generate an astrological interpretation as perfectly formatted JSON using exactly this structure:
+        {
+          "summary": "A 2-3 sentence overview of the chart's main themes",
+          "details": {
+            "Sun Sign": "Detailed analysis of sun sign (${positions.Sun?.sign}) at ${positions.Sun?.degree}°${positions.Sun?.minutes}'",
+            "Moon Sign": "Analysis of moon sign (${positions.Moon?.sign}) at ${positions.Moon?.degree}°${positions.Moon?.minutes}'",
+            "Rising Sign": "Analysis of ascendant (${positions.Ascendant?.sign}) at ${positions.Ascendant?.degree}°${positions.Ascendant?.minutes}'",
             "Planetary Positions": "Analysis of each planet's exact position and their significance",
             "House Placements": "Analysis of house cusps and planetary placements",
             "Major Aspects": "Analysis of the major aspects between planets calculated above",
@@ -63,7 +61,6 @@ Generate an astrological interpretation as perfectly formatted JSON using exactl
 
         try {
             const contentBlock = message.content[0];
-
             if (contentBlock.type === 'text') {
                 const text = contentBlock.text;
                 console.log('Raw Claude response:', text);
@@ -78,35 +75,26 @@ Generate an astrological interpretation as perfectly formatted JSON using exactl
                 }
 
                 console.log('Successfully generated chart data');
-                return NextResponse.json(chartData); // Return the interpretation
+                return res.status(200).json(chartData); // Return the interpretation
             } else {
                 console.error(
                     'Received a non-text response from Claude:',
                     contentBlock
                 );
-                return NextResponse.json(
-                    {
+                 return res.status(500).json({
                         error: 'Received an unexpected response format from AI',
-                    },
-                    { status: 500 }
-                );
-              }
+                    });
+            }
         } catch (parseError) {
             console.error('Failed to parse Claude response:', parseError);
-            return NextResponse.json(
-                { error: 'Invalid response format from AI' },
-                { status: 500 }
-            );
+             return res.status(500).json({ error: 'Invalid response format from AI' });
         }
     } catch (error) {
         console.error('API Error:', error);
-        return NextResponse.json(
-            {
+         return res.status(500).json({
                 error: 'Failed to generate astrological interpretation',
                 details:
                     error instanceof Error ? error.message : 'Unknown error',
-            },
-            { status: 500 }
-        );
+            });
     }
 }
