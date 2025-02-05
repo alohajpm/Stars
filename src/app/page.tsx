@@ -6,7 +6,6 @@ interface ChartData {
     summary: string;
     details: Record<string, string>;
     calculated_positions?: {
-        // This is now optional, as it's passed separately
         [key: string]: {
             sign: string;
             degree: number;
@@ -22,75 +21,66 @@ const HomePage = () => {
     const [chartData, setChartData] = useState<ChartData | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string>("");
-    const [chartImage, setChartImage] = useState<string | null>(null); // State for the chart image
+    const [chartImage, setChartImage] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
         setError("");
-        setChartData(null); // Clear previous chart data
-        setChartImage(null); //Clear previous image
+        setChartData(null);
+        setChartImage(null);
 
         try {
-            console.log(
-                "Submitting form with data:",
-                { birthDate, birthTime, place }
-            );
-
-            // 1. Calculate Positions (First API Call)
+            // 1. Calculate Positions
             const positionsRes = await fetch("/api/calculate-positions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ birthDate, birthTime, place }),
             });
 
+            const positionsData = await positionsRes.json();
+
             if (!positionsRes.ok) {
-                const errorData = await positionsRes.json();
-                throw new Error(
-                    errorData.error ||
-                        errorData.details ||
-                        "Failed to calculate positions"
-                );
+                throw new Error(positionsData.error || positionsData.details || "Failed to calculate positions");
             }
 
-            const positions = await positionsRes.json();
-            console.log("Received positions:", positions);
+            console.log("Received positions:", positionsData);
 
-            // 2. Generate Interpretation (Second API Call)
-            const interpretationRes = await fetch(
-                "/api/generate-interpretation",
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ positions }), // Send calculated positions
-                }
-            );
-
-            if (!interpretationRes.ok) {
-                const errorData = await interpretationRes.json();
-                throw new Error(
-                    errorData.error ||
-                        errorData.details ||
-                        "Failed to fetch chart data"
-                );
-            }
+            // 2. Generate Interpretation
+            const interpretationRes = await fetch("/api/generate-interpretation", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ positions: positionsData }),
+            });
 
             const interpretationData = await interpretationRes.json();
+
+            if (!interpretationRes.ok) {
+                throw new Error(interpretationData.error || interpretationData.details || "Failed to generate interpretation");
+            }
+
+            // Add the calculated positions to the interpretation data
+            interpretationData.calculated_positions = positionsData;
+            
             console.log("Received interpretation:", interpretationData);
             setChartData(interpretationData);
+
+            // 3. Generate Chart Image
+            await handleGenerateChart(positionsData);
+
         } catch (error) {
-            console.error("Error fetching chart:", error);
-            setError(
-                error instanceof Error ? error.message : "An error occurred"
-            );
+            console.error("Error:", error);
+            setError(error instanceof Error ? error.message : "An unexpected error occurred");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleGenerateChart = async () => {
-        if (!chartData || !chartData.calculated_positions) {
-            setError("Please generate the chart data first.");
+    const handleGenerateChart = async (positions?: any) => {
+        const positionsToUse = positions || (chartData?.calculated_positions);
+        
+        if (!positionsToUse) {
+            setError("No chart positions available");
             return;
         }
 
@@ -98,39 +88,23 @@ const HomePage = () => {
             const res = await fetch("/api/generate-chart", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    positions: chartData.calculated_positions,
-                }),
+                body: JSON.stringify({ positions: positionsToUse }),
             });
 
+            const data = await res.json();
+
             if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(
-                    errorData.error ||
-                        errorData.details ||
-                        "Failed to generate chart image"
-                );
+                throw new Error(data.error || data.details || "Failed to generate chart image");
             }
 
-            const data = await res.json();
             setChartImage(data.image);
         } catch (error) {
             console.error("Error generating chart image:", error);
-            setError(
-                error instanceof Error
-                    ? error.message
-                    : "An error occurred while generating the chart image"
-            );
+            setError(error instanceof Error ? error.message : "Failed to generate chart image");
         }
     };
 
-    const ExpandableSection = ({
-        title,
-        content,
-    }: {
-        title: string;
-        content: string;
-    }) => {
+    const ExpandableSection = ({ title, content }: { title: string; content: string }) => {
         const [expanded, setExpanded] = useState(false);
 
         return (
@@ -148,7 +122,7 @@ const HomePage = () => {
                 </div>
                 {expanded && (
                     <div className="p-4 bg-white">
-                        <p className="text-gray-700 leading-relaxed">
+                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                             {content}
                         </p>
                     </div>
@@ -163,7 +137,7 @@ const HomePage = () => {
             <div
                 className="absolute inset-0 opacity-40 bg-cover bg-center"
                 style={{
-                    backgroundImage: "url('/stars-bg.jpg')", // Correct path
+                    backgroundImage: "url('/stars-bg.jpg')",
                     backgroundBlendMode: "screen",
                 }}
             />
@@ -183,30 +157,27 @@ const HomePage = () => {
                             {chartData.summary}
                         </p>
                         <div className="space-y-4">
-                            {Object.entries(chartData.details).map(
-                                ([section, info]) => (
-                                    <ExpandableSection
-                                        key={section}
-                                        title={section}
-                                        content={info}
-                                    />
-                                )
-                            )}
+                            {Object.entries(chartData.details).map(([section, info]) => (
+                                <ExpandableSection
+                                    key={section}
+                                    title={section}
+                                    content={info}
+                                />
+                            ))}
                         </div>
-                        <button
-                            onClick={handleGenerateChart}
-                            className="mt-8 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors mx-auto block"
-                        >
-                            Generate Natal Chart
-                        </button>
 
-                        {/* Display the chart image if available */}
+                        {error && (
+                            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                <p className="text-red-700">{error}</p>
+                            </div>
+                        )}
+
                         {chartImage && (
                             <div className="mt-8">
                                 <img
                                     src={chartImage}
                                     alt="Natal Chart"
-                                    className="mx-auto"
+                                    className="mx-auto max-w-full h-auto rounded-lg shadow-lg"
                                 />
                             </div>
                         )}
@@ -215,7 +186,7 @@ const HomePage = () => {
                             onClick={() => {
                                 setChartData(null);
                                 setError("");
-                                setChartImage(null); // Also reset the chart image
+                                setChartImage(null);
                             }}
                             className="mt-8 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors mx-auto block"
                         >
@@ -239,11 +210,6 @@ const HomePage = () => {
                         {error && (
                             <div className="p-4 mb-6 bg-red-50 border border-red-200 rounded-lg">
                                 <p className="text-red-700">{error}</p>
-                                {process.env.NODE_ENV === "development" && (
-                                    <p className="text-sm text-red-500 mt-2">
-                                        Developer: Check console for more details
-                                    </p>
-                                )}
                             </div>
                         )}
                         <form onSubmit={handleSubmit} className="space-y-6">
@@ -258,9 +224,7 @@ const HomePage = () => {
                                     type="date"
                                     id="birthDate"
                                     value={birthDate}
-                                    onChange={(e) =>
-                                        setBirthDate(e.target.value)
-                                    }
+                                    onChange={(e) => setBirthDate(e.target.value)}
                                     required
                                     className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900"
                                 />
@@ -277,9 +241,7 @@ const HomePage = () => {
                                     type="time"
                                     id="birthTime"
                                     value={birthTime}
-                                    onChange={(e) =>
-                                        setBirthTime(e.target.value)
-                                    }
+                                    onChange={(e) => setBirthTime(e.target.value)}
                                     required
                                     style={{ colorScheme: "light" }}
                                     className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900"
