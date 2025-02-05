@@ -28,10 +28,9 @@ const HomePage = () => {
         e.preventDefault();
         setLoading(true);
         setError("");
-        setChartData(null);  // Reset previous data
-        setChartImage(null); // Reset previous image
+        setChartData(null);
+        setChartImage(null);
 
-          // Basic Client-Side Validation (Add more as needed)
         if (!birthDate) {
             setError("Birth Date is required.");
             setLoading(false);
@@ -48,9 +47,7 @@ const HomePage = () => {
             return;
         }
 
-
         try {
-            // 1. Calculate Positions
             const positionsRes = await fetch("/api/calculate-positions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -66,30 +63,23 @@ const HomePage = () => {
             const positionsData = await positionsRes.json();
             console.log("Received positions:", positionsData);
 
-            // 2. Generate Interpretation
             const interpretationRes = await fetch("/api/generate-interpretation", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ positions: positionsData }),
             });
 
-
-             if (!interpretationRes.ok) {
+            if (!interpretationRes.ok) {
                 const errorData = await interpretationRes.json().catch(() => ({}));
                 const errorMessage = errorData.error || errorData.details || "Failed to generate interpretation";
                 throw new Error(errorMessage);
             }
 
-
             const interpretationData = await interpretationRes.json();
-
-            // Add the calculated positions to the interpretation data
             interpretationData.calculated_positions = positionsData;
-
             console.log("Received interpretation:", interpretationData);
             setChartData(interpretationData);
 
-            // 3. Generate Chart Image
             await handleGenerateChart(positionsData);
 
         } catch (error) {
@@ -116,9 +106,9 @@ const HomePage = () => {
             });
 
             if (!res.ok) {
-              const errorData = await res.json().catch(()=> ({}));
-              const errorMessage = errorData.error || errorData.details || "Failed to generate chart image";
-              throw new Error(errorMessage);
+                const errorData = await res.json().catch(() => ({}));
+                const errorMessage = errorData.error || errorData.details || "Failed to generate chart image";
+                throw new Error(errorMessage);
             }
 
             const data = await res.json();
@@ -130,7 +120,6 @@ const HomePage = () => {
         }
     };
 
-    // Corrected ExpandableSection: Uses Tailwind classes and string content.
     const ExpandableSection = ({ title, content }: { title: React.ReactNode; content: string }) => {
         const [expanded, setExpanded] = useState(false);
 
@@ -148,7 +137,6 @@ const HomePage = () => {
                     </span>
                 </div>
                 {expanded && (
-                    // Add the class here:
                     <div className="p-4 bg-white expandable-section-content">
                         <p className="body-text leading-relaxed">
                             {content}
@@ -188,7 +176,7 @@ const HomePage = () => {
                             {Object.entries(chartData.details).map(([section, info]) => (
                                 <ExpandableSection
                                     key={section}
-                                    title={<span className="subheading">{section}</span>}  {/*Apply class to span*/}
+                                    title={<span className="subheading">{section}</span>}
                                     content={info}
                                 />
                             ))}
