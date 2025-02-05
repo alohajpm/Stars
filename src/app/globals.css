@@ -16,12 +16,9 @@
 }
 
 body {
-  background: var(--background); /* Only background, NO color */
-  /* REMOVED font-family from here */
+  background: var(--background);
 }
 
-
-/* Custom Components (using Tailwind directives) */
 @layer components {
   .heading {
     @apply text-3xl text-center mb-6 text-blue-900;
@@ -34,12 +31,12 @@ body {
   }
 
   .body-text {
-    @apply leading-relaxed text-gray-800 dark:text-gray-200; /* Correct text color! */
+    @apply leading-relaxed text-black-800 dark:text-black-800;
     font-family: var(--font-lora);
   }
 
   .summary-text {
-    @apply text-xl text-center mb-8 leading-relaxed text-gray-800 dark:text-gray-200; /* Correct text color! */
+    @apply text-xl text-center mb-8 leading-relaxed text-black-800 dark:text-black-800; /* Correct text color! */
     font-family: var(--font-lora);
   }
 
