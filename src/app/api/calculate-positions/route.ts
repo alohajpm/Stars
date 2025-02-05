@@ -1,4 +1,4 @@
-// /pages/api/calculate-positions.ts
+// /src/app/api/calculate-positions/route.ts
 import { NextResponse } from 'next/server';
 import moment from 'moment-timezone';
 import fs from 'fs';
@@ -21,16 +21,20 @@ type CityData = {
     lng: string;
 };
 
-const publicDir = path.join(process.cwd(), 'public');
-const citiesFilePath = path.join(publicDir, 'cities.json');
+// Correct path for the 'app' router: process.cwd() is the project root.
+const citiesFilePath = path.join(process.cwd(), 'public', 'cities.json');
+console.log("citiesFilePath:", citiesFilePath) // Log the path
 
 let cities: CityData[] = [];
+
+// Load cities data *synchronously* during module initialization.
 try {
     const citiesData = fs.readFileSync(citiesFilePath, 'utf8');
     cities = JSON.parse(citiesData);
+    console.log(`Loaded ${cities.length} cities from cities.json`); // Log successful load
 } catch (error) {
     console.error('Error loading cities data:', error);
-    cities = []; // Initialize as an empty array
+    cities = []; // Initialize as an empty array on error
 }
 
 const stateTimezones: { [key: string]: string } = {
@@ -99,6 +103,7 @@ function getZodiacPosition(longitude: number) {
     return { sign: signs[signIndex], degree, minutes };
 }
 
+
 function calculateChartPositions(date: string, time: string, place: string) {
     console.time("calculateChartPositions");
     try {
@@ -106,10 +111,9 @@ function calculateChartPositions(date: string, time: string, place: string) {
         console.log('Parsing location:', { city, state });
 
         if (!cities || cities.length === 0) {
-           return { error: 'Cities data not loaded.' };
+            return { error: 'Cities data not loaded.' };
         }
 
-        // Corrected cityData finding logic: Case-insensitive comparison.
         const cityData = cities.find(c =>
             c.name.toLowerCase() === city.toLowerCase() &&
             c.state_code.toUpperCase() === state.toUpperCase()
@@ -119,16 +123,14 @@ function calculateChartPositions(date: string, time: string, place: string) {
             return { error: `City not found: ${city}, ${state}` };
         }
 
-
         const coordinates = {
             lat: parseFloat(cityData.lat),
             lng: parseFloat(cityData.lng)
         };
 
-
         const timezone = stateTimezones[state.toUpperCase()];
         if (!timezone) {
-          return { error: `Unknown timezone for state: ${state}` };
+            return { error: `Unknown timezone for state: ${state}` };
         }
 
         console.log('Using coordinates:', coordinates);
@@ -198,16 +200,15 @@ function calculateChartPositions(date: string, time: string, place: string) {
     }
 }
 
-// Change this line:
-// export async function POST(request: Request) {
-export default async function handler(request: Request) {
+// Corrected function signature: Named export, not default.
+export async function POST(request: Request) {
     console.log('Request Method:', request.method);
     if (request.method !== 'POST') {
         return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
     }
 
     try {
-        const body = await request.json();  // Await the JSON parsing
+        const body = await request.json();
         console.log("Request Body:", body);
         const { birthDate, birthTime, place } = body;
 
@@ -219,10 +220,8 @@ export default async function handler(request: Request) {
         }
 
         const positions = calculateChartPositions(birthDate, birthTime, place);
-
-        // Check if calculateChartPositions returned an error object.
         if (positions.error) {
-            return NextResponse.json(
+          return NextResponse.json(
                 { error: 'Failed to calculate chart positions', details: positions.error },
                 { status: 500 }
             );
