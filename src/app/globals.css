@@ -3,23 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  color: var(--foreground); /* Keep this for overall text color */
-  background: var(--background);
-  /* Remove font-family from here.  Apply to specific elements. */
-}
+/* Remove :root and @media - let Tailwind handle dark mode */
 
 /* Custom Components (using Tailwind directives) */
 @layer components {
@@ -29,23 +13,17 @@ body {
   }
 
   .subheading {
-    @apply text-lg font-semibold text-blue-900;
+    @apply text-lg font-semibold text-blue-900; /* Keep text-blue-900 for subheadings */
     font-family: var(--font-montserrat);
   }
 
   .body-text {
-    @apply leading-relaxed; /* Keep this for line height */
+    @apply leading-relaxed text-gray-800 dark:text-gray-200; /* Correct text color! */
     font-family: var(--font-lora);
-    /* No text color here!  It's handled in expandable-section-content p */
   }
 
   .summary-text {
-    @apply text-xl text-center mb-8 leading-relaxed text-gray-800 dark:text-gray-200; /* Tailwind colors */
+    @apply text-xl text-center mb-8 leading-relaxed text-gray-800 dark:text-gray-200; /* Correct text color!*/
     font-family: var(--font-lora);
-  }
-
-    /* This is the KEY rule for fixing the text color */
-  .expandable-section-content p {
-    @apply text-gray-700 dark:text-gray-300; /* Tailwind colors for light/dark mode */
   }
 }
