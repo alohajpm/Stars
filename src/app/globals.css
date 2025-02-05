@@ -1,4 +1,3 @@
-/* src/app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -36,9 +35,8 @@ body {
   }
 
   .summary-text {
-    @apply text-xl text-center mb-8 leading-relaxed text-black-800 dark:text-black-800; /* Correct text color! */
+    @apply text-xl text-center mb-8 leading-relaxed text-black-800 dark:text-black-800;
     font-family: var(--font-lora);
   }
 
-  /* No need for .expandable-section-content p  anymore */
 }
