@@ -10,10 +10,6 @@ const geistSans = Geist({
   subsets: ['latin'],
 });
 
-const geistMono = GeistMono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
 
 // New fonts (using next/font/google for Montserrat and Lora)
 const montserrat = Montserrat({
