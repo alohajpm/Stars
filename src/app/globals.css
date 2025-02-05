@@ -18,6 +18,7 @@
 body {
   color: var(--foreground);
   background: var(--background);
+  font-family: var(--font-lora); /* Keep this, as it was working for the main body */
 }
 
 h1 {
@@ -32,19 +33,10 @@ p, .body-text {
     font-family: var(--font-lora);
 }
 
-/* More specific selector for text inside expandable sections */
-.expandable-section-content p { /* Target <p> tags inside elements with this class */
-    color: var(--foreground); /* Or any other color you want */
+
+/* Add this rule to specifically target the expandable section content */
+.expandable-section-content p {
+    color: var(--foreground); /* Or use a Tailwind class like text-gray-800 dark:text-gray-200 */
 }
 
-/* Other styles (as before) */
-.summary-text {
-    font-family: var(--font-lora);
-    font-size: 1.2em;
-    line-height: 1.6;
-}
-
-.expandable-section-title {
-    font-family: var(--font-montserrat);
-    font-weight: 700;
-}
+/* Keep any other custom styles you might have */
