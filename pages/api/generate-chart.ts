@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextResponse } from 'next/server';
 import { createCanvas, CanvasRenderingContext2D } from 'canvas';
 
 export const config = {
@@ -9,6 +9,22 @@ export const config = {
         responseLimit: false,
     },
 };
+
+interface PlanetPosition {
+    sign: string;
+    degree: number;
+    minutes: number;
+}
+
+interface Positions {
+    [key: string]: PlanetPosition | any;
+    Houses: Array<{
+        house: number;
+        sign: string;
+        degree: number;
+        minutes: number;
+    }>;
+}
 
 function drawCircle(
     context: CanvasRenderingContext2D,
@@ -65,16 +81,16 @@ const zodiacSymbols: { [key: string]: string } = {
     'Pisces': '♓',
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
-    }
-
+export async function POST(request: Request) {
     try {
-        const { positions } = req.body;
+        const body = await request.json();
+        const { positions } = body as { positions: Positions };
 
         if (!positions) {
-            return res.status(400).json({ error: 'Positions data is required' });
+            return NextResponse.json(
+                { error: 'Positions data is required' },
+                { status: 400 }
+            );
         }
 
         const width = 800;
@@ -132,14 +148,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
 
         // Plot planets
-        Object.entries(positions).forEach(([planet, data]) => {
-            if (planet !== 'Houses' && planetSymbols[planet] && data.sign && typeof data.degree === 'number') {
+        Object.entries(positions).forEach(([planet, data]: [string, any]) => {
+            if (
+                planet !== 'Houses' &&
+                planetSymbols[planet] &&
+                data?.sign &&
+                typeof data?.degree === 'number'
+            ) {
                 const signIndex = zodiacSigns.indexOf(data.sign);
                 if (signIndex !== -1) {
-                    const planetAngle = ((signIndex * 30 + data.degree) / 180) * Math.PI;
+                    const planetAngle =
+                        ((signIndex * 30 + data.degree) / 180) * Math.PI;
                     const planetRadius = innerRadius * 0.8;
-                    const x = centerX + planetRadius * Math.cos(planetAngle);
-                    const y = centerY + planetRadius * Math.sin(planetAngle);
+                    const x =
+                        centerX + planetRadius * Math.cos(planetAngle);
+                    const y =
+                        centerY + planetRadius * Math.sin(planetAngle);
 
                     // Draw planet symbol
                     const symbol = planetSymbols[planet];
@@ -149,8 +173,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
                     // Add degree text
                     const textRadius = innerRadius * 0.6;
-                    const textX = centerX + textRadius * Math.cos(planetAngle);
-                    const textY = centerY + textRadius * Math.sin(planetAngle);
+                    const textX =
+                        centerX + textRadius * Math.cos(planetAngle);
+                    const textY =
+                        centerY + textRadius * Math.sin(planetAngle);
                     ctx.font = '12px Arial';
                     ctx.fillStyle = '#000000';
                     ctx.fillText(`${data.degree}°`, textX, textY);
@@ -161,13 +187,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Convert canvas to base64 image
         const imageDataUrl = canvas.toDataURL('image/png');
         
-        return res.status(200).json({ image: imageDataUrl });
+        return NextResponse.json({ image: imageDataUrl });
 
     } catch (error) {
         console.error('Error generating chart:', error);
-        return res.status(500).json({
-            error: 'Failed to generate chart image',
-            details: error instanceof Error ? error.message : 'Unknown error'
-        });
+        return NextResponse.json(
+            {
+                error: 'Failed to generate chart image',
+                details: error instanceof Error ? error.message : 'Unknown error'
+            },
+            { status: 500 }
+        );
     }
 }
