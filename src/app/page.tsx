@@ -31,6 +31,24 @@ const HomePage = () => {
         setChartData(null);  // Reset previous data
         setChartImage(null); // Reset previous image
 
+          // Basic Client-Side Validation (Add more as needed)
+        if (!birthDate) {
+            setError("Birth Date is required.");
+            setLoading(false);
+            return;
+        }
+        if (!birthTime) {
+            setError("Birth Time is required.");
+            setLoading(false);
+            return;
+        }
+        if (!place) {
+            setError("Place of Birth is required.");
+            setLoading(false);
+            return;
+        }
+
+
         try {
             // 1. Calculate Positions
             const positionsRes = await fetch("/api/calculate-positions", {
@@ -39,12 +57,15 @@ const HomePage = () => {
                 body: JSON.stringify({ birthDate, birthTime, place }),
             });
 
-            const positionsData = await positionsRes.json();
-
+            // *** IMPORTANT: Check res.ok *BEFORE* parsing JSON ***
             if (!positionsRes.ok) {
-                throw new Error(positionsData.error || positionsData.details || "Failed to calculate positions");
+                // Get the error message from the response, if any
+                const errorData = await positionsRes.json().catch(() => ({})); // Try to parse as JSON, default to empty object
+                const errorMessage = errorData.error || errorData.details || "Failed to calculate positions";
+                throw new Error(errorMessage);
             }
 
+            const positionsData = await positionsRes.json();
             console.log("Received positions:", positionsData);
 
             // 2. Generate Interpretation
@@ -54,11 +75,15 @@ const HomePage = () => {
                 body: JSON.stringify({ positions: positionsData }),
             });
 
-            const interpretationData = await interpretationRes.json();
 
-            if (!interpretationRes.ok) {
-                throw new Error(interpretationData.error || interpretationData.details || "Failed to generate interpretation");
+             if (!interpretationRes.ok) {
+                const errorData = await interpretationRes.json().catch(() => ({}));
+                const errorMessage = errorData.error || errorData.details || "Failed to generate interpretation";
+                throw new Error(errorMessage);
             }
+
+
+            const interpretationData = await interpretationRes.json();
 
             // Add the calculated positions to the interpretation data
             interpretationData.calculated_positions = positionsData;
@@ -92,12 +117,13 @@ const HomePage = () => {
                 body: JSON.stringify({ positions: positionsToUse }),
             });
 
-            const data = await res.json();
-
             if (!res.ok) {
-                throw new Error(data.error || data.details || "Failed to generate chart image");
+              const errorData = await res.json().catch(()=> ({}));
+              const errorMessage = errorData.error || errorData.details || "Failed to generate chart image";
+              throw new Error(errorMessage);
             }
 
+            const data = await res.json();
             setChartImage(data.image);
         } catch (error) {
             console.error("Error generating chart image:", error);
@@ -134,7 +160,7 @@ const HomePage = () => {
 
     const AstrologyBackground = () => (
         <div className="fixed inset-0 z-[-1]">
-            <div className="absolute inset-0 bg-gradient-to-b from-indigo-900 via-blue-900 to-black" />
+            <div className="absolute inset-0 bg-gradient-to-b from-indigo-900 via -blue-900 to-black" />
             <div
                 className="absolute inset-0 opacity-40 bg-cover bg-center"
                 style={{
