@@ -17,5 +17,20 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-lora);
+}
+
+h1 {
+    font-family: var(--font-great-vibes);
+    /* Other styles for h1 */
+}
+
+h2, h3, .subheading { /* Use a class for consistent subheadings */
+    font-family: var(--font-montserrat);
+    /* Other styles for subheadings */
+}
+
+p, .body-text { /* Use a class for body text */
+    font-family: var(--font-lora);
+    /* Other styles for body text */
 }
