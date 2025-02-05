@@ -129,7 +129,8 @@ const HomePage = () => {
             setError(error instanceof Error ? error.message : "Failed to generate chart image");
         }
     };
-// Corrected ExpandableSection: Uses Tailwind classes and string content.
+
+    // Corrected ExpandableSection: Uses Tailwind classes and string content.
     const ExpandableSection = ({ title, content }: { title: React.ReactNode; content: string }) => {
         const [expanded, setExpanded] = useState(false);
 
@@ -139,7 +140,7 @@ const HomePage = () => {
                     className="flex justify-between items-center p-4 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors"
                     onClick={() => setExpanded(!expanded)}
                 >
-                    <h3 className="subheading"> {/* Removed extra styling */}
+                    <h3 className="subheading">
                         {title}
                     </h3>
                     <span className="text-2xl text-blue-700">
@@ -147,7 +148,8 @@ const HomePage = () => {
                     </span>
                 </div>
                 {expanded && (
-                    <div className="p-4 bg-white expandable-section-content"> {/* Added class here */}
+                    // Add the class here:
+                    <div className="p-4 bg-white expandable-section-content">
                         <p className="body-text leading-relaxed">
                             {content}
                         </p>
@@ -163,7 +165,7 @@ const HomePage = () => {
             <div
                 className="absolute inset-0 opacity-40 bg-cover bg-center"
                 style={{
-                    backgroundImage: "url('https://onlysnails.com/wp-content/uploads/2025/02/Cygnus-Loop-Nebula.jpg')",
+                    backgroundImage: "url('https://onlysnails.com/wp-content/uploads/2025/02/nebula.jpg')",
                     backgroundBlendMode: "screen",
                 }}
             />
@@ -186,7 +188,7 @@ const HomePage = () => {
                             {Object.entries(chartData.details).map(([section, info]) => (
                                 <ExpandableSection
                                     key={section}
-                                    title={<span className="subheading">{section}</span>}  {/* Apply class to span */}
+                                    title={<span className="subheading">{section}</span>}  {/*Apply class to span*/}
                                     content={info}
                                 />
                             ))}
@@ -221,7 +223,7 @@ const HomePage = () => {
                     </div>
                 </div>
             </div>
-        );
+        ); // Corrected: Closing parenthesis for the return statement
     }
 
     return (
