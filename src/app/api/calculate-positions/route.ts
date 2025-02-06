@@ -68,89 +68,19 @@ const stateTimezones: { [key: string]: string } = {
     'WY': 'America/Denver'
 };
 
-// State Code Mapping (NEW - Full Name to Two-Letter Code)
-const stateCodeMapping: { [key: string]: string } = {
-    'alabama': 'AL',
-    'alaska': 'AK',
-    'arizona': 'AZ',
-    'arkansas': 'AR',
-    'california': 'CA',
-    'colorado': 'CO',
-    'connecticut': 'CT',
-    'delaware': 'DE',
-    'district of columbia': 'DC',
-    'florida': 'FL',
-    'georgia': 'GA',
-    'hawaii': 'HI',
-    'idaho': 'ID',
-    'illinois': 'IL',
-    'indiana': 'IN',
-    'iowa': 'IA',
-    'kansas': 'KS',
-    'kentucky': 'KY',
-    'louisiana': 'LA',
-    'maine': 'ME',
-    'maryland': 'MD',
-    'massachusetts': 'MA',
-    'michigan': 'MI',
-    'minnesota': 'MN',
-    'mississippi': 'MS',
-    'missouri': 'MO',
-    'montana': 'MT',
-    'nebraska': 'NE',
-    'nevada': 'NV',
-    'new hampshire': 'NH',
-    'new jersey': 'NJ',
-    'new mexico': 'NM',
-    'new york': 'NY',
-    'north carolina': 'NC',
-    'north dakota': 'ND',
-    'ohio': 'OH',
-    'oklahoma': 'OK',
-    'oregon': 'OR',
-    'pennsylvania': 'PA',
-    'rhode island': 'RI',
-    'south carolina': 'SC',
-    'south dakota': 'SD',
-    'tennessee': 'TN',
-    'texas': 'TX',
-    'utah': 'UT',
-    'vermont': 'VT',
-    'virginia': 'VA',
-    'washington': 'WA',
-    'west virginia': 'WV',
-    'wisconsin': 'WI',
-    'wyoming': 'WY',
-    'american samoa': 'AS',
-    'guam': 'GU',
-    'northern mariana islands': 'MP',
-    'puerto rico': 'PR',
-    'united states minor outlying islands': 'UM',
-    'virgin islands': 'VI',
-};
-
-
-// --- Helper function to fetch city data from Back4App ---
-async function fetchCityData(city: string, stateName: string) { // Changed parameter name
+// --- Helper function to fetch city data from Back4App (Simplified) ---
+async function fetchCityData(city: string, stateCode: string) {
     const appId = process.env.BACK4APP_APPLICATION_ID;
     const jsKey = process.env.BACK4APP_JAVASCRIPT_KEY;
 
     if (!appId || !jsKey) {
-        throw new Error("Missing Back4App credentials.  Check your .env.local file.");
+        throw new Error("Missing Back4App credentials.");
     }
-
-    // Convert full state name to two-letter code (CRITICAL CHANGE)
-    const stateCode = stateCodeMapping[stateName.toLowerCase()];
-    if (!stateCode) {
-        throw new Error(`Invalid state name: ${stateName}`);
-    }
-
     const url = `https://parseapi.back4app.com/classes/USA_cities_${stateCode.toUpperCase()}?where=${encodeURIComponent(
         JSON.stringify({
             name: { "$regex": `^${city}$`, "$options": "i" } // Case-insensitive, exact match
         })
     )}`;
-
     const response = await fetch(url, {
         headers: {
             'X-Parse-Application-Id': appId,
@@ -165,11 +95,11 @@ async function fetchCityData(city: string, stateName: string) { // Changed param
     const data = await response.json();
 
     if (!data.results || data.results.length === 0) {
-        throw new Error(`City not found: ${city}, ${stateCode}`); // Use stateCode in error message
+        throw new Error(`City not found: ${city}, ${stateCode}`);
     }
-  // Sort the results by population (descending) and return the most populated result
-    data.results.sort((a:any, b:any) => b.population - a.population);
-    return data.results[0];
+    // Sort by population (descending)
+    data.results.sort((a: any, b: any) => b.population - a.population);
+    return data.results[0]; // Return the most populated result
 }
 
 function getZodiacPosition(longitude: number) {
@@ -187,20 +117,20 @@ function getZodiacPosition(longitude: number) {
 async function calculateChartPositions(date: string, time: string, place: string) {
     console.time("calculateChartPositions");
     try {
-        const [city, state] = place.split(',').map(s => s.trim());
-        console.log('Parsing location:', { city, state });
+        const [city, stateCode] = place.split(',').map(s => s.trim()); // Correctly destructure stateCode
+        console.log('Parsing location:', { city, stateCode });
 
         // Fetch city data from Back4App
-        const cityData = await fetchCityData(city, state); // Pass state name
+        const cityData = await fetchCityData(city, stateCode); // Pass stateCode
 
         const coordinates = {
             lat: cityData.location.latitude,
             lng: cityData.location.longitude,
         };
 
-        const timezone = stateTimezones[stateCodeMapping[state.toLowerCase()]]; // Get two-letter code
+        const timezone = stateTimezones[stateCode.toUpperCase()]; // Use stateCode here
         if (!timezone) {
-            return { error: `Unknown timezone for state: ${state}` };
+            return { error: `Unknown timezone for state: ${stateCode}` }; // and here
         }
 
         console.log('Using coordinates:', coordinates);
@@ -213,7 +143,7 @@ async function calculateChartPositions(date: string, time: string, place: string
         const observer = new Astronomy.Observer(coordinates.lat, coordinates.lng, 0);
         const positions: any = {};
 
-        // Calculate house cusps first
+       // Calculate house cusps first
         const sidereal = Astronomy.SiderealTime(date_obj);
         const ascendantLongitude = ((sidereal + coordinates.lng / 15) * 15 + 180) % 360;
         positions.Ascendant = getZodiacPosition(ascendantLongitude);
@@ -269,7 +199,6 @@ async function calculateChartPositions(date: string, time: string, place: string
         return { error: error instanceof Error ? error.message : 'Unknown error' };
     }
 }
-
 export async function POST(request: Request) {
     if (request.method !== 'POST') {
         return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
