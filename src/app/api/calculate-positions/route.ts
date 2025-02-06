@@ -119,10 +119,9 @@ async function calculateChartPositions(date: string, time: string, place: string
         const [city, stateCode] = place.split(',').map(s => s.trim());
         console.log('Parsing location:', { city, stateCode });
 
-        // *** KEY CHANGE: Handle empty place ***
         if (!city || !stateCode) {
             console.log("City or state code is empty. Returning empty positions.");
-            return {}; // Return an empty object.  Do *not* call fetchCityData.
+            return {}; // Return an empty object.
         }
 
         const cityData = await fetchCityData(city, stateCode);
@@ -206,9 +205,12 @@ export async function POST(request: Request) {
 
     try {
         const body = await request.json();
+        console.log("/api/calculate-positions: Received body:", body); // LOG 1: Incoming body
+
         const { birthDate, birthTime, place } = body;
 
         if (!birthDate || !birthTime || !place) {
+            console.log("/api/calculate-positions: Missing required fields"); // LOG 2
             return NextResponse.json(
                 { error: 'Missing required fields' },
                 { status: 400 }
@@ -216,12 +218,16 @@ export async function POST(request: Request) {
         }
 
         const positions = await calculateChartPositions(birthDate, birthTime, place);
+        console.log("/api/calculate-positions: Calculated positions:", positions); // LOG 3: Result
+
         if (positions.error) {
-          return NextResponse.json(
-                { error: 'Failed to calculate chart positions', details: positions.error },
-                { status: 500 }
-            );
+              console.log("returning positions error");
+              return NextResponse.json(
+                    { error: 'Failed to calculate chart positions', details: positions.error },
+                    { status: 500 }
+                );
         }
+
         return NextResponse.json(positions);
 
     } catch (error) {
