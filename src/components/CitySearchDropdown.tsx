@@ -18,7 +18,6 @@ interface CitySearchDropdownProps {
 const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, placeholder = "City, State" }) => {
     const [query, setQuery] = useState('');
     const [suggestions, setSuggestions] = useState<City[]>([]);
-    const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
         const fetchSuggestions = async () => {
@@ -29,12 +28,9 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
 
             try {
                 const response = await fetch(`/api/search-cities?query=${encodeURIComponent(query)}`);
-                if (!response.ok) {
-                    throw new Error(`API request failed: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`API request failed: ${response.status}`);
                 const data = await response.json();
                 setSuggestions(data.results || []);
-                setIsOpen(true);
             } catch (error) {
                 console.error('Error fetching city suggestions:', error);
             }
@@ -50,63 +46,50 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
             setQuery("");
             return;
         }
-        const selectedCity = {
+        onSelect({
             name: city.name,
             stateCode: city.stateCode,
             lat: city.location.latitude,
             lng: city.location.longitude
-        };
-
+        });
         setQuery(city.full_name);
-        onSelect(selectedCity);
-        setIsOpen(false);
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setQuery(e.target.value);
-        if (e.target.value.length < 2) {
-            setSuggestions([]);
-            onSelect({ name: "", stateCode: "", lat: 0, lng: 0 });
-            setIsOpen(false);
-        } else {
-            setIsOpen(true);
-        }
     };
 
     return (
         <div className="relative w-full">
             <Combobox value={suggestions.find(city => city.full_name === query) ?? null} onChange={handleSelect}>
-                <div className="relative">
-                    <Combobox.Input
-                        onChange={handleInputChange}
-                        placeholder={placeholder}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                        autoComplete="off"
-                        displayValue={(city: City | null) => city ? city.full_name : query}
-                    />
-                </div>
-                
-                {isOpen && suggestions.length > 0 && (
-                    <Combobox.Options className="absolute z-[100] w-full mt-1 bg-white border-2 border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-                        {suggestions.map((city) => (
-                            <Combobox.Option
-                                key={city.cityId}
-                                value={city}
-                                className={({ active }) =>
-                                    `relative cursor-default select-none py-2 pl-4 pr-4 ${
-                                        active ? 'bg-blue-600 text-white' : 'text-gray-900'
-                                    }`
-                                }
-                            >
-                                {({ selected, active }) => (
-                                    <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
-                                        {city.full_name}
-                                    </span>
-                                )}
-                            </Combobox.Option>
-                        ))}
-                    </Combobox.Options>
-                )}
+                <Combobox.Input
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={placeholder}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                    displayValue={(city: City | null) => city?.full_name ?? query}
+                />
+                <Combobox.Options 
+                    className="absolute left-0 z-50 w-full mt-1 bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm"
+                    style={{
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                        border: '1px solid #e5e7eb'
+                    }}
+                >
+                    {suggestions.map((city) => (
+                        <Combobox.Option
+                            key={city.cityId}
+                            value={city}
+                            className={({ active }) =>
+                                `relative cursor-default select-none py-2 pl-3 pr-9 ${
+                                    active ? 'bg-blue-600 text-white' : 'text-gray-900'
+                                }`
+                            }
+                        >
+                            {city.full_name}
+                        </Combobox.Option>
+                    ))}
+                    {query.length >= 2 && suggestions.length === 0 && (
+                        <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
+                            No cities found.
+                        </div>
+                    )}
+                </Combobox.Options>
             </Combobox>
         </div>
     );
