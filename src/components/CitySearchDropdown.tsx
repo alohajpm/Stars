@@ -22,26 +22,30 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
 
     useEffect(() => {
         const fetchSuggestions = async () => {
+            // No early return!
             if (query.length < 2) {
-                setSuggestions([]);
-                return;
+                setSuggestions([]); // Clear suggestions, BUT CONTINUE
+            }
+            else { // Only fetch if query length is 2+
+
+              try {
+                  const response = await fetch(`/api/search-cities?query=${encodeURIComponent(query)}`);
+                  if (!response.ok) {
+                      throw new Error(`API request failed: ${response.status}`);
+                  }
+                  const data = await response.json();
+                  setSuggestions(data.results || []);
+              } catch (error) {
+                  console.error('Error fetching city suggestions:', error);
+              }
+
             }
 
-            try {
-                const response = await fetch(`/api/search-cities?query=${encodeURIComponent(query)}`);
-                if (!response.ok) {
-                    throw new Error(`API request failed: ${response.status}`);
-                }
-                const data = await response.json();
-                setSuggestions(data.results || []);
-            } catch (error) {
-                console.error('Error fetching city suggestions:', error);
-            }
         };
 
         const timerId = setTimeout(fetchSuggestions, 200);
         return () => clearTimeout(timerId);
-    }, [query]);
+    }, [query]); // Correct dependency
 
     const handleSelect = (city: City | null) => { // Allow null selection
         if (!city) {
@@ -55,10 +59,11 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
             lat: city.location.latitude,
             lng: city.location.longitude
         };
-        setQuery(city.full_name);
+
+        setQuery(city.full_name); // Keep the input field updated
         onSelect(selectedCity);
     };
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       setQuery(e.target.value)
        if (e.target.value.length < 2) {
             setSuggestions([]);
@@ -73,7 +78,7 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
                 placeholder={placeholder}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
                 autoComplete="off"
-                displayValue={(city: City) => city ? city.full_name : ""} // KEY CHANGE: displayValue
+                displayValue={(city: City | null) => city ? city.full_name : ""} // Use null check
             />
             <Combobox.Options className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
                 {suggestions.map((city) => (
