@@ -1,7 +1,7 @@
 // /src/app/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";  // Import useEffect
 import CitySearchDropdown from '../components/CitySearchDropdown';
 
 interface ChartData {
@@ -25,16 +25,26 @@ const HomePage = () => {
     const [error, setError] = useState<string>("");
     const [chartImage, setChartImage] = useState<string | null>(null);
 
+    // Construct the input value for CitySearchDropdown
+    const cityInputValue = selectedCity ? `${selectedCity.name}, ${selectedCity.stateCode}` : "";
+
+     useEffect(() => {
+        // Clear selectedCity if birthDate or birthTime changes
+        if (birthDate || birthTime) {
+            setSelectedCity(null);
+        }
+    }, [birthDate, birthTime]);
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        console.log("Form submitted!"); // Log 1: Check if handleSubmit is called
+        console.log("Form submitted!");
 
         setLoading(true);
         setError("");
         setChartData(null);
         setChartImage(null);
 
-        console.log("Form data:", { birthDate, birthTime, selectedCity }); // Log 2: Check form data
+        console.log("Form data:", { birthDate, birthTime, selectedCity });
 
         if (!birthDate) {
             setError("Birth Date is required.");
@@ -53,7 +63,7 @@ const HomePage = () => {
         }
 
         const place = `${selectedCity.name}, ${selectedCity.stateCode}`;
-        console.log("Place:", place); // Log 3: Verify 'place' string
+        console.log("Place:", place);
 
         try {
             // 1. Calculate Positions
@@ -63,17 +73,17 @@ const HomePage = () => {
                 body: JSON.stringify({ birthDate, birthTime, place }),
             });
 
-            console.log("Positions API response status:", positionsRes.status); // Log 4
+            console.log("Positions API response status:", positionsRes.status);
 
             if (!positionsRes.ok) {
                 const errorData = await positionsRes.json().catch(() => ({}));
-                console.error("Positions API error:", errorData); // Log 5: Detailed error
+                console.error("Positions API error:", errorData);
                 const errorMessage = errorData.error || errorData.details || "Failed to calculate positions";
                 throw new Error(errorMessage);
             }
 
             const positionsData = await positionsRes.json();
-            console.log("Received positions:", positionsData); // Log 6
+            console.log("Received positions:", positionsData);
 
             // 2. Generate Interpretation
             const interpretationRes = await fetch("/api/generate-interpretation", {
@@ -82,25 +92,25 @@ const HomePage = () => {
                 body: JSON.stringify({ positions: positionsData }),
             });
 
-            console.log("Interpretation API response status:", interpretationRes.status); // Log 7
+            console.log("Interpretation API response status:", interpretationRes.status);
 
             if (!interpretationRes.ok) {
                 const errorData = await interpretationRes.json().catch(() => ({}));
-                console.error("Interpretation API error:", errorData);  // Log 8
+                console.error("Interpretation API error:", errorData);
                 const errorMessage = errorData.error || errorData.details || "Failed to generate interpretation";
                 throw new Error(errorMessage);
             }
 
             const interpretationData = await interpretationRes.json();
             interpretationData.calculated_positions = positionsData;
-            console.log("Received interpretation:", interpretationData); // Log 9
+            console.log("Received interpretation:", interpretationData);
             setChartData(interpretationData);
 
             // 3. Generate Chart Image
             await handleGenerateChart(positionsData);
 
         } catch (error) {
-            console.error("Error in handleSubmit:", error); // Log 10: Catch-all error
+            console.error("Error in handleSubmit:", error);
             setError(error instanceof Error ? error.message : "An unexpected error occurred");
         } finally {
             setLoading(false);
@@ -114,7 +124,7 @@ const HomePage = () => {
             setError("No chart positions available");
             return;
         }
-        console.log("Generating chart with positions:", positionsToUse); // Log 11
+        console.log("Generating chart with positions:", positionsToUse);
 
         try {
             const res = await fetch("/api/generate-chart", {
@@ -123,21 +133,21 @@ const HomePage = () => {
                 body: JSON.stringify({ positions: positionsToUse }),
             });
 
-            console.log("Chart API response status:", res.status); // Log 12
+            console.log("Chart API response status:", res.status);
 
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
-                console.error("Chart API error:", errorData); // Log 13
+                console.error("Chart API error:", errorData);
                 const errorMessage = errorData.error || errorData.details || "Failed to generate chart image";
                 throw new Error(errorMessage);
             }
 
             const data = await res.json();
             setChartImage(data.image);
-            console.log("Chart image set."); // Log 14
+            console.log("Chart image set.");
 
         } catch (error) {
-            console.error("Error generating chart image:", error); // Log 15
+            console.error("Error generating chart image:", error);
             setError(error instanceof Error ? error.message : "Failed to generate chart image");
         }
     };
@@ -292,18 +302,15 @@ const HomePage = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <label
-                                    htmlFor="place"
-                                    className="block text-sm font-medium text-gray-700 subheading"
-                                >
-                                    Place of Birth
-                                </label>
-                                <CitySearchDropdown
-                                    onSelect={(city) => {
-                                        console.log("City selected:", city); // Log 16: Verify city selection
-                                        setSelectedCity(city);
-                                    }}
-                                />
+                                 <label htmlFor="place" className="block text-sm font-medium text-gray-700 subheading">
+                                      Place of Birth
+                                 </label>
+                                 <CitySearchDropdown
+                                      onSelect={(city) => {
+                                         setSelectedCity(city);
+                                      }}
+                                    value={cityInputValue} // Pass the value prop
+                                 />
                             </div>
 
                             <button
