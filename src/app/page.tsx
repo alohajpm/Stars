@@ -200,7 +200,7 @@ const HomePage = () => {
                 <div className="bg-white/95 backdrop-blur-sm shadow-xl rounded-lg">
                     <div className="p-8">
                         <h1 className="heading text-3xl text-center mb-6 text-blue-900">
-                            Your Astrological Chart
+                            Your Astrological Chart:
                         </h1>
                         <p className="summary-text">
                             {chartData.summary}
