@@ -1,7 +1,7 @@
 // /src/app/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";  // Import useEffect
+import { useState, useEffect } from "react";
 import CitySearchDropdown from '../components/CitySearchDropdown';
 
 interface ChartData {
@@ -25,8 +25,8 @@ const HomePage = () => {
     const [error, setError] = useState<string>("");
     const [chartImage, setChartImage] = useState<string | null>(null);
 
-    // Construct the input value for CitySearchDropdown
-    const cityInputValue = selectedCity ? `${selectedCity.name}, ${selectedCity.stateCode}` : "";
+     const cityInputValue = selectedCity ? `${selectedCity.name}, ${selectedCity.stateCode}` : "";
+
 
      useEffect(() => {
         // Clear selectedCity if birthDate or birthTime changes
@@ -34,6 +34,7 @@ const HomePage = () => {
             setSelectedCity(null);
         }
     }, [birthDate, birthTime]);
+
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -193,7 +194,7 @@ const HomePage = () => {
     );
 
 
-    if (chartData) {
+     if (chartData) {
        return (
             <div className="max-w-4xl mx-auto p-8">
                 <AstrologyBackground />
@@ -306,10 +307,11 @@ const HomePage = () => {
                                       Place of Birth
                                  </label>
                                  <CitySearchDropdown
-                                      onSelect={(city) => {
-                                         setSelectedCity(city);
-                                      }}
-                                    value={cityInputValue} // Pass the value prop
+                                    onSelect={(city) => {
+                                        console.log("page.tsx: City selected:", city); // VERY IMPORTANT LOG
+                                        setSelectedCity(city);
+                                    }}
+                                    value={cityInputValue}
                                  />
                             </div>
 
