@@ -180,18 +180,17 @@ const HomePage = () => {
         );
     };
 
-    const AstrologyBackground = () => (
-        <div className="fixed inset-0 z-[-1]">
-            <div className="absolute inset-0 bg-gradient-to-b from-indigo-900 via-blue-900 to-black" />
-            <div
-                className="absolute inset-0 opacity-40 bg-cover bg-center"
-                style={{
-                    backgroundImage: "url('https://onlysnails.com/wp-content/uploads/2025/02/AdobeStock_794875557-scaled.jpeg')",
-                    backgroundBlendMode: "screen",
-                }}
-            />
-        </div>
-    );
+const AstrologyBackground = () => (
+   <div className="fixed inset-0 z-[-1]">
+       <div
+           className="absolute inset-0 bg-cover bg-center"
+           style={{
+               backgroundImage: "url('https://onlysnails.com/wp-content/uploads/2025/02/AdobeStock_794875557-scaled.jpeg')",
+               backgroundBlendMode: "screen",
+           }}
+       />
+   </div>
+);
 
     if (chartData) {
        return (
