@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import CitySearchDropdown from '../components/CitySearchDropdown'; // Import the new component
+import CitySearchDropdown from '../components/CitySearchDropdown';
 
 interface ChartData {
     summary: string;
@@ -19,7 +19,7 @@ interface ChartData {
 const HomePage = () => {
     const [birthDate, setBirthDate] = useState("");
     const [birthTime, setBirthTime] = useState("");
-    const [selectedCity, setSelectedCity] = useState<{ name: string, stateCode: string, lat: number, lng: number } | null>(null); // Store selected city
+    const [selectedCity, setSelectedCity] = useState<{ name: string, stateCode: string, lat: number, lng: number } | null>(null);
     const [chartData, setChartData] = useState<ChartData | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string>("");
@@ -27,10 +27,14 @@ const HomePage = () => {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        console.log("Form submitted!"); // Log 1: Check if handleSubmit is called
+
         setLoading(true);
         setError("");
         setChartData(null);
         setChartImage(null);
+
+        console.log("Form data:", { birthDate, birthTime, selectedCity }); // Log 2: Check form data
 
         if (!birthDate) {
             setError("Birth Date is required.");
@@ -43,52 +47,60 @@ const HomePage = () => {
             return;
         }
         if (!selectedCity) {
-            setError("Please select a valid place of birth."); // Updated error message
+            setError("Please select a valid place of birth.");
             setLoading(false);
             return;
         }
 
-        const place = `${selectedCity.name}, ${selectedCity.stateCode}`; // Use selected city data
+        const place = `${selectedCity.name}, ${selectedCity.stateCode}`;
+        console.log("Place:", place); // Log 3: Verify 'place' string
 
         try {
+            // 1. Calculate Positions
             const positionsRes = await fetch("/api/calculate-positions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ birthDate, birthTime, place }),
             });
 
+            console.log("Positions API response status:", positionsRes.status); // Log 4
+
             if (!positionsRes.ok) {
                 const errorData = await positionsRes.json().catch(() => ({}));
+                console.error("Positions API error:", errorData); // Log 5: Detailed error
                 const errorMessage = errorData.error || errorData.details || "Failed to calculate positions";
                 throw new Error(errorMessage);
             }
 
             const positionsData = await positionsRes.json();
-            console.log("Received positions:", positionsData);
+            console.log("Received positions:", positionsData); // Log 6
 
+            // 2. Generate Interpretation
             const interpretationRes = await fetch("/api/generate-interpretation", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ positions: positionsData }),
             });
 
+            console.log("Interpretation API response status:", interpretationRes.status); // Log 7
 
-             if (!interpretationRes.ok) {
+            if (!interpretationRes.ok) {
                 const errorData = await interpretationRes.json().catch(() => ({}));
+                console.error("Interpretation API error:", errorData);  // Log 8
                 const errorMessage = errorData.error || errorData.details || "Failed to generate interpretation";
                 throw new Error(errorMessage);
             }
 
-
             const interpretationData = await interpretationRes.json();
             interpretationData.calculated_positions = positionsData;
-            console.log("Received interpretation:", interpretationData);
+            console.log("Received interpretation:", interpretationData); // Log 9
             setChartData(interpretationData);
 
+            // 3. Generate Chart Image
             await handleGenerateChart(positionsData);
 
         } catch (error) {
-            console.error("Error:", error);
+            console.error("Error in handleSubmit:", error); // Log 10: Catch-all error
             setError(error instanceof Error ? error.message : "An unexpected error occurred");
         } finally {
             setLoading(false);
@@ -96,12 +108,13 @@ const HomePage = () => {
     };
 
     const handleGenerateChart = async (positions?: any) => {
-        const positionsToUse = positions || (chartData?.calculated_positions);
+        const positionsToUse = positions || chartData?.calculated_positions;
 
         if (!positionsToUse) {
             setError("No chart positions available");
             return;
         }
+        console.log("Generating chart with positions:", positionsToUse); // Log 11
 
         try {
             const res = await fetch("/api/generate-chart", {
@@ -110,20 +123,25 @@ const HomePage = () => {
                 body: JSON.stringify({ positions: positionsToUse }),
             });
 
+            console.log("Chart API response status:", res.status); // Log 12
+
             if (!res.ok) {
-              const errorData = await res.json().catch(()=> ({}));
-              const errorMessage = errorData.error || errorData.details || "Failed to generate chart image";
-              throw new Error(errorMessage);
+                const errorData = await res.json().catch(() => ({}));
+                console.error("Chart API error:", errorData); // Log 13
+                const errorMessage = errorData.error || errorData.details || "Failed to generate chart image";
+                throw new Error(errorMessage);
             }
 
             const data = await res.json();
-            setChartImage(data.image)
+            setChartImage(data.image);
+            console.log("Chart image set."); // Log 14
 
         } catch (error) {
-            console.error("Error generating chart image:", error);
+            console.error("Error generating chart image:", error); // Log 15
             setError(error instanceof Error ? error.message : "Failed to generate chart image");
         }
     };
+
     const ExpandableSection = ({ title, content }: { title: React.ReactNode; content: string }) => {
         const [expanded, setExpanded] = useState(false);
 
@@ -164,8 +182,9 @@ const HomePage = () => {
         </div>
     );
 
+
     if (chartData) {
-        return (
+       return (
             <div className="max-w-4xl mx-auto p-8">
                 <AstrologyBackground />
                 <div className="bg-white/95 backdrop-blur-sm shadow-xl rounded-lg">
@@ -207,6 +226,10 @@ const HomePage = () => {
                                 setChartData(null);
                                 setError("");
                                 setChartImage(null);
+                                setSelectedCity(null); // Clear the selected city
+                                setBirthDate("");    // Clear
+                                setBirthTime("");    // Clear
+
                             }}
                             className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mx-auto block"
                         >
@@ -276,7 +299,10 @@ const HomePage = () => {
                                     Place of Birth
                                 </label>
                                 <CitySearchDropdown
-                                    onSelect={(city) => setSelectedCity(city)}
+                                    onSelect={(city) => {
+                                        console.log("City selected:", city); // Log 16: Verify city selection
+                                        setSelectedCity(city);
+                                    }}
                                 />
                             </div>
 
