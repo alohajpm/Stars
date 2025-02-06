@@ -13,7 +13,7 @@ export const config = {
     maxDuration: 300,
 };
 
-// State Timezones (Remains the same)
+// State Timezones
 const stateTimezones: { [key: string]: string } = {
     'AK': 'America/Anchorage',
     'AL': 'America/Chicago',
@@ -68,7 +68,7 @@ const stateTimezones: { [key: string]: string } = {
     'WY': 'America/Denver'
 };
 
-// --- Helper function to fetch city data from Back4App (Simplified) ---
+// --- Helper function to fetch city data from Back4App ---
 async function fetchCityData(city: string, stateCode: string) {
     const appId = process.env.BACK4APP_APPLICATION_ID;
     const jsKey = process.env.BACK4APP_JAVASCRIPT_KEY;
@@ -78,7 +78,7 @@ async function fetchCityData(city: string, stateCode: string) {
     }
     const url = `https://parseapi.back4app.com/classes/USA_cities_${stateCode.toUpperCase()}?where=${encodeURIComponent(
         JSON.stringify({
-            name: { "$regex": `^${city}$`, "$options": "i" } // Case-insensitive, exact match
+            name: { "$regex": `^${city}$`, "$options": "i" }
         })
     )}`;
     const response = await fetch(url, {
@@ -95,12 +95,10 @@ async function fetchCityData(city: string, stateCode: string) {
     const data = await response.json();
 
     if (!data.results || data.results.length === 0) {
-
-        throw new Error(`City not found: ${city}, ${stateCode}`); // This will now show the correct city/state
+        throw new Error(`City not found: ${city}, ${stateCode}`);
     }
-    // Sort by population (descending)
     data.results.sort((a: any, b: any) => b.population - a.population);
-    return data.results[0]; // Return the most populated result
+    return data.results[0];
 }
 
 function getZodiacPosition(longitude: number) {
@@ -118,20 +116,25 @@ function getZodiacPosition(longitude: number) {
 async function calculateChartPositions(date: string, time: string, place: string) {
     console.time("calculateChartPositions");
     try {
-        const [city, stateCode] = place.split(',').map(s => s.trim()); // Correctly destructure stateCode
+        const [city, stateCode] = place.split(',').map(s => s.trim());
         console.log('Parsing location:', { city, stateCode });
 
-        // Fetch city data from Back4App
-        const cityData = await fetchCityData(city, stateCode); // Pass stateCode
+        // *** KEY CHANGE: Handle empty place ***
+        if (!city || !stateCode) {
+            console.log("City or state code is empty. Returning empty positions.");
+            return {}; // Return an empty object.  Do *not* call fetchCityData.
+        }
+
+        const cityData = await fetchCityData(city, stateCode);
 
         const coordinates = {
             lat: cityData.location.latitude,
             lng: cityData.location.longitude,
         };
 
-        const timezone = stateTimezones[stateCode.toUpperCase()]; // Use stateCode here
+        const timezone = stateTimezones[stateCode.toUpperCase()];
         if (!timezone) {
-            return { error: `Unknown timezone for state: ${stateCode}` }; // and here
+            return { error: `Unknown timezone for state: ${stateCode}` };
         }
 
         console.log('Using coordinates:', coordinates);
@@ -144,7 +147,6 @@ async function calculateChartPositions(date: string, time: string, place: string
         const observer = new Astronomy.Observer(coordinates.lat, coordinates.lng, 0);
         const positions: any = {};
 
-       // Calculate house cusps first
         const sidereal = Astronomy.SiderealTime(date_obj);
         const ascendantLongitude = ((sidereal + coordinates.lng / 15) * 15 + 180) % 360;
         positions.Ascendant = getZodiacPosition(ascendantLongitude);
@@ -157,17 +159,14 @@ async function calculateChartPositions(date: string, time: string, place: string
             };
         });
 
-        // Calculate Sun
         const sun = Astronomy.Equator(Astronomy.Body.Sun, date_obj, observer, true, true);
         const sunLongitude = (sun.ra * 15) % 360;
         positions.Sun = getZodiacPosition(sunLongitude);
 
-        // Calculate Moon
         const moon = Astronomy.Equator(Astronomy.Body.Moon, date_obj, observer, true, true);
 		const moonLongitude = (moon.ra * 15) % 360;
         positions.Moon = getZodiacPosition(moonLongitude);
 
-        // Calculate other planets
         const planets = {
             Mercury: Astronomy.Body.Mercury,
             Venus: Astronomy.Body.Venus,
@@ -186,7 +185,6 @@ async function calculateChartPositions(date: string, time: string, place: string
             	positions[planet] = getZodiacPosition(longitude);
 			} catch (error) {
                 console.error(`Error calculating ${planet} position:`, error);
-                // Use approximation if exact calculation fails
                 const approxLongitude = (sunLongitude + Object.keys(planets).indexOf(planet) * 30) % 360;
                 positions[planet] = getZodiacPosition(approxLongitude);
             }
@@ -200,6 +198,7 @@ async function calculateChartPositions(date: string, time: string, place: string
         return { error: error instanceof Error ? error.message : 'Unknown error' };
     }
 }
+
 export async function POST(request: Request) {
     if (request.method !== 'POST') {
         return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
@@ -216,9 +215,9 @@ export async function POST(request: Request) {
             );
         }
 
-        const positions = await calculateChartPositions(birthDate, birthTime, place);  // Await the result
+        const positions = await calculateChartPositions(birthDate, birthTime, place);
         if (positions.error) {
-            return NextResponse.json(
+          return NextResponse.json(
                 { error: 'Failed to calculate chart positions', details: positions.error },
                 { status: 500 }
             );
