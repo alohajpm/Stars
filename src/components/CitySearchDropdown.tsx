@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Listbox } from '@headlessui/react';
 
 interface City {
     name: string;
@@ -17,7 +16,6 @@ interface Props {
 
 export default function CitySearchDropdown({ onSelect, placeholder = "City, State" }: Props) {
     const [query, setQuery] = useState('');
-    const [selectedCity, setSelectedCity] = useState<City | null>(null);
     const [suggestions, setSuggestions] = useState<City[]>([]);
 
     useEffect(() => {
@@ -41,19 +39,8 @@ export default function CitySearchDropdown({ onSelect, placeholder = "City, Stat
         return () => clearTimeout(timer);
     }, [query]);
 
-    const handleSelect = (city: City) => {
-        setSelectedCity(city);
-        onSelect({
-            name: city.name,
-            stateCode: city.stateCode,
-            lat: city.location.latitude,
-            lng: city.location.longitude
-        });
-        setQuery(city.full_name);
-    };
-
     return (
-        <div className="relative">
+        <>
             <input
                 type="text"
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -61,19 +48,32 @@ export default function CitySearchDropdown({ onSelect, placeholder = "City, Stat
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
             />
-            {suggestions.length > 0 && (
-                <div className="absolute mt-1 w-full bg-white rounded-md shadow-lg max-h-60 overflow-auto z-50 border border-gray-200">
-                    {suggestions.map((city) => (
-                        <div
-                            key={city.cityId}
-                            className="px-4 py-2 hover:bg-blue-500 hover:text-white cursor-pointer"
-                            onClick={() => handleSelect(city)}
-                        >
-                            {city.full_name}
-                        </div>
-                    ))}
+            <div className="relative">
+                <div className="absolute left-0 right-0 mt-1">
+                    {suggestions.length > 0 && (
+                        <ul className="bg-white border-2 border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+                            {suggestions.map((city) => (
+                                <li
+                                    key={city.cityId}
+                                    className="px-4 py-2 hover:bg-blue-500 hover:text-white cursor-pointer"
+                                    onClick={() => {
+                                        onSelect({
+                                            name: city.name,
+                                            stateCode: city.stateCode,
+                                            lat: city.location.latitude,
+                                            lng: city.location.longitude
+                                        });
+                                        setQuery(city.full_name);
+                                        setSuggestions([]);
+                                    }}
+                                >
+                                    {city.full_name}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
-            )}
-        </div>
+            </div>
+        </>
     );
 }
