@@ -19,6 +19,7 @@ interface CitySearchDropdownProps {
 const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, placeholder = "City, State" }) => {
     const [query, setQuery] = useState('');
     const [suggestions, setSuggestions] = useState<City[]>([]);
+    // No need for inputValue state, HeadlessUI manages that internally
 
     useEffect(() => {
         const fetchSuggestions = async () => {
@@ -41,10 +42,11 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
         return () => clearTimeout(timerId);
     }, [query]);
 
+
     const handleSelect = (city: City | null) => {
         if (!city) {
             onSelect({ name: "", stateCode: "", lat: 0, lng: 0 });
-            setQuery("");
+            setQuery(""); // Also clear the query when deselecting.
             return;
         }
         const selectedCity = {
@@ -53,27 +55,19 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
             lat: city.location.latitude,
             lng: city.location.longitude
         };
-        setQuery(city.full_name);
+
+        setQuery(city.full_name); // Update query to display full name
         onSelect(selectedCity);
     };
 
-     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setQuery(e.target.value)
-       if (e.target.value.length < 2) {
-            setSuggestions([]);
-            onSelect({ name: "", stateCode: "", lat: 0, lng: 0 }); // Clear selection
-        }
-    }
-
 
     return (
-        // KEY CHANGE: Remove the extra <div>
         <Combobox value={suggestions.find(city => city.full_name === query) ?? null} onChange={handleSelect}>
             <Combobox.Input
-                onChange={handleInputChange}
+                onChange={(event) => setQuery(event.target.value)}  // Simplfied.  Update query directly
                 placeholder={placeholder}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                displayValue={(city: City | null) => city?.full_name ?? ""}
+                displayValue={(city: City | null) => city ? city.full_name : query} // Use query when no selection
                 autoComplete="off"
             />
             <Combobox.Options
@@ -83,6 +77,11 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
                     border: '1px solid #e5e7eb'
                 }}
             >
+                {suggestions.length === 0 && query.length >= 2 && (
+                    <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
+                        No cities found.
+                    </div>
+                )}
                 {suggestions.map((city) => (
                     <Combobox.Option
                         key={city.cityId}
@@ -96,11 +95,7 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
                         {city.full_name}
                     </Combobox.Option>
                 ))}
-                {query.length >= 2 && suggestions.length === 0 && (
-                    <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
-                        No cities found.
-                    </div>
-                )}
+
             </Combobox.Options>
         </Combobox>
     );
