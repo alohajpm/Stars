@@ -1,8 +1,6 @@
 // /src/app/api/calculate-positions/route.ts
 import { NextResponse } from 'next/server';
 import moment from 'moment-timezone';
-import fs from 'fs';
-import path from 'path';
 import * as Astronomy from 'astronomy-engine';
 
 export const config = {
@@ -10,32 +8,11 @@ export const config = {
         bodyParser: {
             sizeLimit: '1mb',
         },
-        maxDuration: 300,
     },
+    runtime: 'nodejs', // Add this line.  Very Important
+    maxDuration: 300,
 };
 
-type CityData = {
-    name: string;
-    state_code: string;
-    lat: string;
-    lng: string;
-};
-
-// Correct path for the 'app' router: process.cwd() is the project root.
-const citiesFilePath = path.join(process.cwd(), 'public', 'cities.json');
-console.log("citiesFilePath:", citiesFilePath) // Log the path
-
-let cities: CityData[] = [];
-
-// Load cities data *synchronously* during module initialization.
-try {
-    const citiesData = fs.readFileSync(citiesFilePath, 'utf8');
-    cities = JSON.parse(citiesData);
-    console.log(`Loaded ${cities.length} cities from cities.json`); // Log successful load
-} catch (error) {
-    console.error('Error loading cities data:', error);
-    cities = []; // Initialize as an empty array on error
-}
 
 const stateTimezones: { [key: string]: string } = {
     'AK': 'America/Anchorage',
@@ -91,6 +68,43 @@ const stateTimezones: { [key: string]: string } = {
     'WY': 'America/Denver'
 };
 
+
+// --- Helper function to fetch city data from Back4App ---
+async function fetchCityData(city: string, stateCode: string) {
+    const appId = process.env.BACK4APP_APPLICATION_ID;
+    const jsKey = process.env.BACK4APP_JAVASCRIPT_KEY;
+
+    if (!appId || !jsKey) {
+        throw new Error("Missing Back4App credentials.  Check your .env.local file.");
+    }
+
+    const url = `https://parseapi.back4app.com/classes/USA_cities_${stateCode.toUpperCase()}?where=${encodeURIComponent(
+        JSON.stringify({
+            name: { "$regex": `^${city}$`, "$options": "i" } // Case-insensitive, exact match
+        })
+    )}`;
+
+    const response = await fetch(url, {
+        headers: {
+            'X-Parse-Application-Id': appId,
+            'X-Parse-Javascript-Key': jsKey,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Back4App API request failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.results || data.results.length === 0) {
+        throw new Error(`City not found: ${city}, ${stateCode}`);
+    }
+  // Sort the results by population (descending) and return the most populated result
+    data.results.sort((a:any, b:any) => b.population - a.population);
+    return data.results[0];
+}
+
 function getZodiacPosition(longitude: number) {
     const signs = [
         "Aries", "Taurus", "Gemini", "Cancer",
@@ -103,29 +117,18 @@ function getZodiacPosition(longitude: number) {
     return { sign: signs[signIndex], degree, minutes };
 }
 
-
-function calculateChartPositions(date: string, time: string, place: string) {
+async function calculateChartPositions(date: string, time: string, place: string) {
     console.time("calculateChartPositions");
     try {
         const [city, state] = place.split(',').map(s => s.trim());
         console.log('Parsing location:', { city, state });
 
-        if (!cities || cities.length === 0) {
-            return { error: 'Cities data not loaded.' };
-        }
-
-        const cityData = cities.find(c =>
-            c.name.toLowerCase() === city.toLowerCase() &&
-            c.state_code.toUpperCase() === state.toUpperCase()
-        );
-
-        if (!cityData) {
-            return { error: `City not found: ${city}, ${state}` };
-        }
+        // Fetch city data from Back4App
+        const cityData = await fetchCityData(city, state);
 
         const coordinates = {
-            lat: parseFloat(cityData.lat),
-            lng: parseFloat(cityData.lng)
+            lat: cityData.location.latitude,
+            lng: cityData.location.longitude,
         };
 
         const timezone = stateTimezones[state.toUpperCase()];
@@ -163,7 +166,7 @@ function calculateChartPositions(date: string, time: string, place: string) {
 
         // Calculate Moon
         const moon = Astronomy.Equator(Astronomy.Body.Moon, date_obj, observer, true, true);
-        const moonLongitude = (moon.ra * 15) % 360;
+		const moonLongitude = (moon.ra * 15) % 360;
         positions.Moon = getZodiacPosition(moonLongitude);
 
         // Calculate other planets
@@ -179,11 +182,11 @@ function calculateChartPositions(date: string, time: string, place: string) {
         };
 
         Object.entries(planets).forEach(([planet, body]) => {
-            try {
-                const pos = Astronomy.Equator(body, date_obj, observer, true, true);
-                const longitude = (pos.ra * 15) % 360;
-                positions[planet] = getZodiacPosition(longitude);
-            } catch (error) {
+			try{
+            	const pos = Astronomy.Equator(body, date_obj, observer, true, true);
+            	const longitude = (pos.ra * 15) % 360;
+            	positions[planet] = getZodiacPosition(longitude);
+			} catch (error) {
                 console.error(`Error calculating ${planet} position:`, error);
                 // Use approximation if exact calculation fails
                 const approxLongitude = (sunLongitude + Object.keys(planets).indexOf(planet) * 30) % 360;
@@ -200,16 +203,13 @@ function calculateChartPositions(date: string, time: string, place: string) {
     }
 }
 
-// Corrected function signature: Named export, not default.
 export async function POST(request: Request) {
-    console.log('Request Method:', request.method);
     if (request.method !== 'POST') {
         return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
     }
 
     try {
         const body = await request.json();
-        console.log("Request Body:", body);
         const { birthDate, birthTime, place } = body;
 
         if (!birthDate || !birthTime || !place) {
@@ -219,14 +219,13 @@ export async function POST(request: Request) {
             );
         }
 
-        const positions = calculateChartPositions(birthDate, birthTime, place);
+        const positions = await calculateChartPositions(birthDate, birthTime, place);  // Await the result
         if (positions.error) {
-          return NextResponse.json(
+            return NextResponse.json(
                 { error: 'Failed to calculate chart positions', details: positions.error },
                 { status: 500 }
             );
         }
-
         return NextResponse.json(positions);
 
     } catch (error) {
