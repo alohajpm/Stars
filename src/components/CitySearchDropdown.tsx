@@ -7,7 +7,7 @@ interface City {
     name: string;
     stateCode: string;
     full_name: string;
-    cityId: number; // Use number, as per screenshot
+    cityId: number;
     location: { latitude: number; longitude: number };
 }
 
@@ -19,6 +19,8 @@ interface CitySearchDropdownProps {
 const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, placeholder = "City, State" }) => {
     const [query, setQuery] = useState('');
     const [suggestions, setSuggestions] = useState<City[]>([]);
+    const [selectedCity, setSelectedCity] = useState<City | null>(null); // NEW: Track selected city
+
 
     useEffect(() => {
         const fetchSuggestions = async () => {
@@ -41,38 +43,45 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
         return () => clearTimeout(timerId);
     }, [query]);
 
-   const handleSelect = (city: City | null) => {
+    const handleSelect = (city: City | null) => {
         if (!city) {
+            setSelectedCity(null); // Clear selection
+            setQuery(""); //clear query
             onSelect({ name: "", stateCode: "", lat: 0, lng: 0 });
-            setQuery("");
             return;
         }
-        const selectedCity = {
+        const selectedCityData = { // Use a temporary variable
             name: city.name,
             stateCode: city.stateCode,
             lat: city.location.latitude,
             lng: city.location.longitude
         };
-        setQuery(city.full_name);
-        onSelect(selectedCity);
+
+        setSelectedCity(city); // Store the *entire* city object
+        setQuery(city.full_name);  // keep query updated
+        onSelect(selectedCityData); // Pass to parent
     };
 
-     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setQuery(e.target.value)
-       if (e.target.value.length < 2) {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setQuery(e.target.value);
+        if (e.target.value.length < 2) {
             setSuggestions([]);
+             setSelectedCity(null); // Clear the selection
             onSelect({ name: "", stateCode: "", lat: 0, lng: 0 }); // Clear selection
+
         }
     }
 
+
     return (
         <div className="relative w-full">
-            <Combobox value={suggestions.find(city => city.full_name === query) ?? null} onChange={handleSelect}>
+            {/* Use selectedCity as the value */}
+            <Combobox value={selectedCity} onChange={handleSelect}>
                 <Combobox.Input
                     onChange={handleInputChange}
                     placeholder={placeholder}
                     className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                    displayValue={(city: City | null) => city?.full_name ?? ""}
+                    displayValue={(city: City | null) => city ? city.full_name : query} // Display full name if selected, otherwise query
                     autoComplete="off"
                 />
                 <Combobox.Options
@@ -82,14 +91,14 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
                         border: '1px solid #e5e7eb'
                     }}
                 >
-                    {suggestions.length === 0 && query.length >= 2 && (
+                     {suggestions.length === 0 && query.length >= 2 && (
                         <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
                             No cities found.
                         </div>
                     )}
                     {suggestions.map((city) => (
                         <Combobox.Option
-                            key={city.cityId} // Use cityId (Number)
+                            key={city.cityId}
                             value={city}
                             className={({ active }) =>
                                 `relative cursor-default select-none py-2 pl-3 pr-9 ${
@@ -97,7 +106,7 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
                                 }`
                             }
                         >
-                           {({ selected, active }) => (
+                            {({ selected, active }) => (
                             <>
                                 <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
                                     {city.full_name}
