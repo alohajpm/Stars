@@ -1,3 +1,4 @@
+// /src/app/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -25,6 +26,7 @@ const HomePage = () => {
     const [chartImage, setChartImage] = useState<string | null>(null);
 
     useEffect(() => {
+        // Clear selectedCity if birthDate or birthTime changes
         if (birthDate || birthTime) {
             setSelectedCity(null);
         }
@@ -55,11 +57,12 @@ const HomePage = () => {
         }
 
         const place = `${selectedCity.name}, ${selectedCity.stateCode}`;
-        await fetchData(birthDate, birthTime, place);
+        await fetchData(birthDate, birthTime, place); // Call fetchData directly
     };
 
-    const fetchData = async (birthDate: string, birthTime: string, place: string) => {
+     const fetchData = async (birthDate: string, birthTime: string, place: string) => {
         try {
+            // 1. Calculate Positions
             const positionsRes = await fetch("/api/calculate-positions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -75,6 +78,7 @@ const HomePage = () => {
             const positionsData = await positionsRes.json();
             console.log("Received positions:", positionsData);
 
+            // 2. Generate Interpretation
             const interpretationRes = await fetch("/api/generate-interpretation", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -92,15 +96,16 @@ const HomePage = () => {
             console.log("Received interpretation:", interpretationData);
             setChartData(interpretationData);
 
+            // 3. Generate Chart Image
             await handleGenerateChart(positionsData);
 
         } catch (error) {
-            console.error("Error in fetchData:", error);
+            console.error("Error in fetchData:", error); // More specific error logging
             setError(error instanceof Error ? error.message : "An unexpected error occurred");
         } finally {
             setLoading(false);
         }
-    };
+    }
 
     const handleGenerateChart = async (positions?: any) => {
         const positionsToUse = positions || chartData?.calculated_positions;
@@ -137,9 +142,11 @@ const HomePage = () => {
         }
     };
 
+     // Scoped styles for the ExpandableSection
     const expandableSectionStyles = {
         section: "mb-4 border rounded-lg overflow-hidden bg-white/95",
-        header: "flex justify-between items-center p-4 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors",
+        header:
+            "flex justify-between items-center p-4 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors",
         headerTitle: "subheading",
         headerIcon: "text-2xl text-blue-700",
         content: "p-4 bg-white",
@@ -187,7 +194,7 @@ const HomePage = () => {
     );
 
     if (chartData) {
-        return (
+       return (
             <div className="max-w-4xl mx-auto p-8">
                 <AstrologyBackground />
                 <div className="bg-white/95 backdrop-blur-sm shadow-xl rounded-lg">
@@ -229,9 +236,10 @@ const HomePage = () => {
                                 setChartData(null);
                                 setError("");
                                 setChartImage(null);
-                                setSelectedCity(null);
-                                setBirthDate("");
-                                setBirthTime("");
+                                setSelectedCity(null); // Clear the selected city
+                                setBirthDate("");    // Clear
+                                setBirthTime("");    // Clear
+
                             }}
                             className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mx-auto block"
                         >
@@ -247,7 +255,7 @@ const HomePage = () => {
         <div className="min-h-screen py-12 px-4">
             <AstrologyBackground />
             <div className="max-w-xl mx-auto">
-                <div className="bg-white/90 backdrop-blur-sm shadow-xl rounded-lg relative z-10">
+                <div className="bg-white/90 backdrop-blur-sm shadow-xl rounded-lg">
                     <div className="p-8">
                         <h1 className="heading text-3xl text-center mb-8 text-blue-900">
                             Discover Your Astrological Chart
@@ -293,12 +301,12 @@ const HomePage = () => {
                                 />
                             </div>
 
-                            <div className="space-y-2 relative z-20">
-                                <label htmlFor="place" className="block text-sm font-medium text-gray-700 subheading">
-                                    Place of Birth
-                                </label>
-                                <CitySearchDropdown
-                                    onSelect={setSelectedCity}
+                            <div className="space-y-2">
+                                 <label htmlFor="place" className="block text-sm font-medium text-gray-700 subheading">
+                                      Place of Birth
+                                 </label>
+                                 <CitySearchDropdown
+                                    onSelect={setSelectedCity} // Correct
                                     placeholder="Enter City, State"
                                 />
                             </div>
