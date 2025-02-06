@@ -142,25 +142,36 @@ const HomePage = () => {
         }
     };
 
+     // Scoped styles for the ExpandableSection
+    const expandableSectionStyles = {
+        section: "mb-4 border rounded-lg overflow-hidden bg-white/95",
+        header:
+            "flex justify-between items-center p-4 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors",
+        headerTitle: "subheading",
+        headerIcon: "text-2xl text-blue-700",
+        content: "p-4 bg-white",
+        contentText: "body-text leading-relaxed",
+    };
+
     const ExpandableSection = ({ title, content }: { title: React.ReactNode; content: string }) => {
         const [expanded, setExpanded] = useState(false);
 
         return (
-            <div className="mb-4 border rounded-lg overflow-hidden bg-white/95">
+            <div className={expandableSectionStyles.section}>
                 <div
-                    className="flex justify-between items-center p-4 bg-blue-50 cursor-pointer hover:bg-blue-100 transition-colors"
+                    className={expandableSectionStyles.header}
                     onClick={() => setExpanded(!expanded)}
                 >
-                    <h3 className="subheading">
+                    <h3 className={expandableSectionStyles.headerTitle}>
                         {title}
                     </h3>
-                    <span className="text-2xl text-blue-700">
+                    <span className={expandableSectionStyles.headerIcon}>
                         {expanded ? '−' : '+'}
                     </span>
                 </div>
                 {expanded && (
-                    <div className="p-4 bg-white">
-                        <p className="body-text leading-relaxed">
+                    <div className={expandableSectionStyles.content}>
+                        <p className={expandableSectionStyles.contentText}>
                             {content}
                         </p>
                     </div>
@@ -198,7 +209,7 @@ const HomePage = () => {
                             {Object.entries(chartData.details).map(([section, info]) => (
                                 <ExpandableSection
                                     key={section}
-                                    title={<span className="subheading">{section}</span>}
+                                    title={<span className={expandableSectionStyles.headerTitle}>{section}</span>}
                                     content={info}
                                 />
                             ))}
