@@ -188,8 +188,7 @@ const HomePage = () => {
     );
 
     if (chartData) {
-       // ... (chartData display remains the same) ...
-        return (
+       return (
             <div className="max-w-4xl mx-auto p-8">
                 <AstrologyBackground />
                 <div className="bg-white/95 backdrop-blur-sm shadow-xl rounded-lg">
@@ -297,10 +296,10 @@ const HomePage = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <label htmlFor="place" className="block text-sm font-medium text-gray-700 subheading">
-                                     Place of Birth
-                                </label>
-                                <CitySearchDropdown
+                                 <label htmlFor="place" className="block text-sm font-medium text-gray-700 subheading">
+                                      Place of Birth
+                                 </label>
+                                 <CitySearchDropdown
                                     onSelect={setSelectedCity} // Simplified onSelect
                                     placeholder="Enter City, State"
                                     // No value prop needed!
