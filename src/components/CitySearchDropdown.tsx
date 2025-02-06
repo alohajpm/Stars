@@ -47,7 +47,7 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
             setQuery("");
             return;
         }
-        const selectedCity = { //Destructure Correctly
+        const selectedCity = {
             name: city.name,
             stateCode: city.stateCode,
             lat: city.location.latitude,
@@ -67,43 +67,42 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
 
 
     return (
-        <div className="relative w-full">
-            <Combobox value={suggestions.find(city => city.full_name === query) ?? null} onChange={handleSelect}>
-                <Combobox.Input
-                    onChange={handleInputChange}
-                    placeholder={placeholder}
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                    displayValue={(city: City | null) => city?.full_name ?? ""}  {/*CRITICAL: Use optional chaining*/}
-                    autoComplete="off"
-                />
-                <Combobox.Options
-                    className="absolute left-0 z-50 w-full mt-1 bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm"
-                      style={{
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                        border: '1px solid #e5e7eb'
-                    }}
-                >
-                    {suggestions.map((city) => (
-                        <Combobox.Option
-                            key={city.cityId} //Correct Key
-                            value={city}
-                            className={({ active }) =>
-                                `relative cursor-default select-none py-2 pl-3 pr-9 ${
-                                    active ? 'bg-blue-600 text-white' : 'text-gray-900'
-                                }`
-                            }
-                        >
-                            {city.full_name}
-                        </Combobox.Option>
-                    ))}
-                    {query.length >= 2 && suggestions.length === 0 && (
-                        <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
-                            No cities found.
-                        </div>
-                    )}
-                </Combobox.Options>
-            </Combobox>
-        </div>
+        // KEY CHANGE: Remove the extra <div>
+        <Combobox value={suggestions.find(city => city.full_name === query) ?? null} onChange={handleSelect}>
+            <Combobox.Input
+                onChange={handleInputChange}
+                placeholder={placeholder}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                displayValue={(city: City | null) => city?.full_name ?? ""}
+                autoComplete="off"
+            />
+            <Combobox.Options
+                className="absolute left-0 z-50 w-full mt-1 bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm"
+                  style={{
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                    border: '1px solid #e5e7eb'
+                }}
+            >
+                {suggestions.map((city) => (
+                    <Combobox.Option
+                        key={city.cityId}
+                        value={city}
+                        className={({ active }) =>
+                            `relative cursor-default select-none py-2 pl-3 pr-9 ${
+                                active ? 'bg-blue-600 text-white' : 'text-gray-900'
+                            }`
+                        }
+                    >
+                        {city.full_name}
+                    </Combobox.Option>
+                ))}
+                {query.length >= 2 && suggestions.length === 0 && (
+                    <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
+                        No cities found.
+                    </div>
+                )}
+            </Combobox.Options>
+        </Combobox>
     );
 };
 
