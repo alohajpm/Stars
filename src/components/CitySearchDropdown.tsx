@@ -13,11 +13,11 @@ interface City {
 interface CitySearchDropdownProps {
     onSelect: (city: { name: string, stateCode: string, lat: number, lng: number }) => void;
     placeholder?: string;
-    initialValue?: string; // Changed from 'value' to 'initialValue'
+    initialValue?: string; // Keep initialValue
 }
 
 const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, placeholder = "City, State", initialValue = "" }) => {
-    const [query, setQuery] = useState(initialValue); // Initialize with initialValue
+    const [query, setQuery] = useState(initialValue);
     const [suggestions, setSuggestions] = useState<City[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -33,7 +33,6 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
         document.addEventListener('mousedown', handleClickOutside);
         return () => { document.removeEventListener('mousedown', handleClickOutside); };
     }, []);
-
 
     // Fetch suggestions (debounced)
     useEffect(() => {
@@ -61,10 +60,9 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
         return () => clearTimeout(timerId);
     }, [query]);
 
-
     // Handle city selection
     const handleSelect = (city: City) => {
-      const selectedCity = {
+        const selectedCity = { // Correct variable name here
             name: city.name,
             stateCode: city.stateCode,
             lat: city.location.latitude,
@@ -74,7 +72,7 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
         setQuery(`${city.name}, ${city.stateCode}`);
         setSuggestions([]);
         setIsOpen(false);
-        onSelect(selectedCity); // Pass to parent
+        onSelect(selectedCity); // Pass the correct object
     };
 
     // Handle input change
@@ -85,10 +83,9 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
         if (inputValue.length < 2) {
             setSuggestions([]);
             setIsOpen(false);
-             onSelect({name: "", stateCode: "", lat: 0, lng: 0}); //clears onSelect if less than 2 characters
+            onSelect({ name: "", stateCode: "", lat: 0, lng: 0 }); // Clear selection
         }
     };
-
 
     return (
         <div className="relative" ref={dropdownRef}>
@@ -98,8 +95,7 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
                 onChange={handleInputChange}
                 placeholder={placeholder}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                 onFocus={() => setIsOpen(query.length >= 2 && suggestions.length > 0)} //open on Focus if valid
-
+                onFocus={() => setIsOpen(query.length >= 2 && suggestions.length > 0)} //open on Focus if valid
             />
             {isOpen && (
                 <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
