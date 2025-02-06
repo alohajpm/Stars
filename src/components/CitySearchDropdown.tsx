@@ -1,6 +1,7 @@
 // src/components/CitySearchDropdown.tsx
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Combobox } from '@headlessui/react';
 
 interface City {
     name: string;
@@ -13,33 +14,16 @@ interface City {
 interface CitySearchDropdownProps {
     onSelect: (city: { name: string, stateCode: string, lat: number, lng: number }) => void;
     placeholder?: string;
-    initialValue?: string; // Keep initialValue
 }
 
-const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, placeholder = "City, State", initialValue = "" }) => {
-    const [query, setQuery] = useState(initialValue);
+const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, placeholder = "City, State" }) => {
+    const [query, setQuery] = useState('');
     const [suggestions, setSuggestions] = useState<City[]>([]);
-    const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Handle clicks outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => { document.removeEventListener('mousedown', handleClickOutside); };
-    }, []);
-
-    // Fetch suggestions (debounced)
     useEffect(() => {
         const fetchSuggestions = async () => {
             if (query.length < 2) {
                 setSuggestions([]);
-                setIsOpen(false);
                 return;
             }
 
@@ -50,7 +34,6 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
                 }
                 const data = await response.json();
                 setSuggestions(data.results || []);
-                setIsOpen(true);
             } catch (error) {
                 console.error('Error fetching city suggestions:', error);
             }
@@ -60,57 +43,66 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
         return () => clearTimeout(timerId);
     }, [query]);
 
-    // Handle city selection
     const handleSelect = (city: City) => {
-        const selectedCity = { // Correct variable name here
+      if (!city) {
+        onSelect({ name: "", stateCode: "", lat: 0, lng: 0 }); //clears selection
+        setQuery("");
+        return;
+      }
+        const selectedCity = {
             name: city.name,
             stateCode: city.stateCode,
             lat: city.location.latitude,
             lng: city.location.longitude
         };
 
-        setQuery(`${city.name}, ${city.stateCode}`);
-        setSuggestions([]);
-        setIsOpen(false);
-        onSelect(selectedCity); // Pass the correct object
-    };
-
-    // Handle input change
-    const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const inputValue = event.target.value;
-        setQuery(inputValue); // Directly update query state
-
-        if (inputValue.length < 2) {
-            setSuggestions([]);
-            setIsOpen(false);
-            onSelect({ name: "", stateCode: "", lat: 0, lng: 0 }); // Clear selection
-        }
+        setQuery(city.full_name); // Keep the input field updated
+        onSelect(selectedCity);
     };
 
     return (
-        <div className="relative" ref={dropdownRef}>
-            <input
-                type="text"
-                value={query} // Controlled input
-                onChange={handleInputChange}
+        <Combobox value={suggestions.find(city => city.full_name === query) ?? null} onChange={handleSelect}>
+            <Combobox.Input
+                onChange={(event) => setQuery(event.target.value)}
                 placeholder={placeholder}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                onFocus={() => setIsOpen(query.length >= 2 && suggestions.length > 0)} //open on Focus if valid
+                autoComplete="off"
             />
-            {isOpen && (
-                <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-                    {suggestions.map((city) => (
-                        <li
-                            key={city.cityId}
-                            onClick={() => handleSelect(city)}
-                            className="px-4 py-2 cursor-pointer hover:bg-gray-100"
-                        >
-                            {city.full_name}
-                        </li>
-                    ))}
-                </ul>
-            )}
-        </div>
+            <Combobox.Options className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                {suggestions.map((city) => (
+                    <Combobox.Option
+                        key={city.cityId}
+                        value={city}
+                        className={({ active }) =>
+                            `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                                active ? 'bg-blue-500 text-white' : 'text-gray-900'
+                            }`
+                        }
+                    >
+                        {({ selected, active }) => (
+                            <>
+                <span
+                  className={`block truncate ${
+                    selected ? 'font-medium' : 'font-normal'
+                  }`}
+                >
+                  {city.full_name}
+                </span>
+                                {selected ? (
+                                    <span
+                                        className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
+                                            active ? 'text-white' : 'text-blue-600'
+                                        }`}
+                                    >
+
+                  </span>
+                                ) : null}
+                            </>
+                        )}
+                    </Combobox.Option>
+                ))}
+            </Combobox.Options>
+        </Combobox>
     );
 };
 
