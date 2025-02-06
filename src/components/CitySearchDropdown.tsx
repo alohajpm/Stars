@@ -43,20 +43,19 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
         return () => clearTimeout(timerId);
     }, [query]);
 
-    const handleSelect = (city: City) => {
-      if (!city) {
-        onSelect({ name: "", stateCode: "", lat: 0, lng: 0 }); //clears selection
-        setQuery("");
-        return;
-      }
+    const handleSelect = (city: City | null) => { // Allow null selection
+        if (!city) {
+            onSelect({ name: "", stateCode: "", lat: 0, lng: 0 }); // Clear selection
+            setQuery("");
+            return;
+        }
         const selectedCity = {
             name: city.name,
             stateCode: city.stateCode,
             lat: city.location.latitude,
             lng: city.location.longitude
         };
-
-        setQuery(city.full_name); // Keep the input field updated
+        setQuery(city.full_name);
         onSelect(selectedCity);
     };
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,15 +65,16 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
             onSelect({ name: "", stateCode: "", lat: 0, lng: 0 }); // Clear selection
         }
     }
+
     return (
-        <Combobox value={suggestions.find(city => city.full_name === query) ?? null} onChange={handleSelect}>
+        <Combobox value={suggestions.find(c => c.full_name === query) ?? null} onChange={handleSelect}>
             <Combobox.Input
                 onChange={handleInputChange}
                 placeholder={placeholder}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
                 autoComplete="off"
+                displayValue={(city: City) => city ? city.full_name : ""} // KEY CHANGE: displayValue
             />
-            {/* KEY STYLING FIXES ARE HERE: */}
             <Combobox.Options className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
                 {suggestions.map((city) => (
                     <Combobox.Option
