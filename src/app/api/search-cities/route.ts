@@ -1,6 +1,64 @@
 // /src/app/api/search-cities/route.ts
 import { NextResponse } from 'next/server';
 
+// State Timezones (from /api/calculate-positions/route.ts) - REUSE THESE!
+const stateTimezones: { [key: string]: string } = {
+    'AK': 'America/Anchorage',
+    'AL': 'America/Chicago',
+    'AR': 'America/Chicago',
+    'AZ': 'America/Phoenix',
+    'CA': 'America/Los_Angeles',
+    'CO': 'America/Denver',
+    'CT': 'America/New_York',
+    'DC': 'America/New_York',
+    'DE': 'America/New_York',
+    'FL': 'America/New_York',
+    'GA': 'America/New_York',
+    'HI': 'Pacific/Honolulu',
+    'IA': 'America/Chicago',
+    'ID': 'America/Denver',
+    'IL': 'America/Chicago',
+    'IN': 'America/Indiana/Indianapolis',
+    'KS': 'America/Chicago',
+    'KY': 'America/New_York',
+    'LA': 'America/Chicago',
+    'MA': 'America/New_York',
+    'MD': 'America/New_York',
+    'ME': 'America/New_York',
+    'MI': 'America/New_York',
+    'MN': 'America/Chicago',
+    'MO': 'America/Chicago',
+    'MS': 'America/Chicago',
+    'MT': 'America/Denver',
+    'NC': 'America/New_York',
+    'ND': 'America/Chicago',
+    'NE': 'America/Chicago',
+    'NH': 'America/New_York',
+    'NJ': 'America/New_York',
+    'NM': 'America/Denver',
+    'NV': 'America/Los_Angeles',
+    'NY': 'America/New_York',
+    'OH': 'America/New_York',
+    'OK': 'America/Chicago',
+    'OR': 'America/Los_Angeles',
+    'PA': 'America/New_York',
+    'RI': 'America/New_York',
+    'SC': 'America/New_York',
+    'SD': 'America/Chicago',
+    'TN': 'America/Chicago',
+    'TX': 'America/Chicago',
+    'UT': 'America/Denver',
+    'VA': 'America/New_York',
+    'VT': 'America/New_York',
+    'WA': 'America/Los_Angeles',
+    'WI': 'America/Chicago',
+    'WV': 'America/New_York',
+    'WY': 'America/Denver'
+};
+
+const stateCodes = Object.keys(stateTimezones); // Get the state codes directly
+
+
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
@@ -16,35 +74,15 @@ export async function GET(request: Request) {
         if (!appId || !jsKey) {
             throw new Error("Missing Back4App credentials.");
         }
-
-        // Fetch all states (ideally, this would be cached or use a separate class for efficiency)
-        const statesResponse = await fetch('https://parseapi.back4app.com/classes/USA_states', {
-            headers: {
-                'X-Parse-Application-Id': appId,
-                'X-Parse-Javascript-Key': jsKey,
-            },
-        });
-
-        if (!statesResponse.ok) {
-            throw new Error(`Failed to fetch states: ${statesResponse.status} ${statesResponse.statusText}`);
-        }
-        const statesData = await statesResponse.json();
-        const states = statesData.results;
-
         let allResults: any[] = [];
 
-        // Perform a search for each State
-        for (const state of states) {
-            const stateCode = state.adminCode;
-
+        // Iterate through state codes directly - NO MORE FETCH TO USA_states
+        for (const stateCode of stateCodes) {
             const url = `https://parseapi.back4app.com/classes/USA_cities_${stateCode}?where=${encodeURIComponent(
                 JSON.stringify({
-                    name: { "$regex": query, "$options": "i" },  // Case-insensitive partial match
+                    name: { "$regex": query, "$options": "i" },
                 })
-            )}&limit=5`; // Limit to 5 results per state
-
-            // LOG THE URL BEING USED:
-            console.log("Back4App API URL:", url);
+            )}&limit=5`;
 
             const response = await fetch(url, {
                 headers: {
@@ -53,34 +91,26 @@ export async function GET(request: Request) {
                 },
             });
 
-            // LOG THE RAW RESPONSE STATUS:
-            console.log("Back4App API Response Status:", response.status);
-
             if (!response.ok) {
-                console.error(`Back4App API request failed for state ${stateCode}: ${response.status} ${response.statusText}`);
-                // LOG THE FULL RESPONSE BODY ON ERROR:
-                console.error("Back4App API Response Body:", await response.text());
-                continue; // Skip to the next state on error
+                console.error(`Back4App API request failed for ${stateCode}: ${response.status}`);
+                continue;
             }
 
             const data = await response.json();
-            // LOG THE RAW DATA:
-            console.log("Back4App API Raw Data:", data);
 
-             if (data.results && data.results.length > 0) {
-                // Add state code to each city result for later use.
+            if (data.results && data.results.length > 0) {
                 const resultsWithState = data.results.map((city: any) => ({
                     ...city,
-                    stateCode: stateCode, // Add the state code here
+                    stateCode: stateCode,
                     full_name: `${city.name}, ${stateCode}`,
-                    cityId: city.objectId
+                    cityId: city.objectId // Use objectId from Back4App
                 }));
-              allResults = allResults.concat(resultsWithState);
-          }
+                allResults = allResults.concat(resultsWithState);
+            }
         }
 
-      allResults.sort((a:any, b:any) => b.population - a.population);
-      const limitedResults = allResults.slice(0,10); // Limit over all top ten results
+        allResults.sort((a: any, b: any) => b.population - a.population);
+        const limitedResults = allResults.slice(0, 10);
 
         return NextResponse.json({ results: limitedResults });
 
