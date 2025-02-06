@@ -1,3 +1,4 @@
+// src/components/CitySearchDropdown.tsx
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Combobox } from '@headlessui/react';
@@ -46,33 +47,43 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
             setQuery("");
             return;
         }
-        onSelect({
+        const selectedCity = { //Destructure Correctly
             name: city.name,
             stateCode: city.stateCode,
             lat: city.location.latitude,
             lng: city.location.longitude
-        });
+        };
         setQuery(city.full_name);
+        onSelect(selectedCity);
     };
+
+     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setQuery(e.target.value)
+       if (e.target.value.length < 2) {
+            setSuggestions([]);
+            onSelect({ name: "", stateCode: "", lat: 0, lng: 0 }); // Clear selection
+        }
+    }
 
     return (
         <div className="relative w-full">
             <Combobox value={suggestions.find(city => city.full_name === query) ?? null} onChange={handleSelect}>
                 <Combobox.Input
-                    onChange={(e) => setQuery(e.target.value)}
+                    onChange={handleInputChange}
                     placeholder={placeholder}
                     className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                    displayValue={(city: City | null) => city?.full_name ?? query}
+                    displayValue={(city: City | null) => city?.full_name ?? ""}  {/*CRITICAL: Use optional chaining*/}
+                    autoComplete="off"
                 />
-                <Combobox.Options 
+                <Combobox.Options
                     className="absolute left-0 z-50 w-full mt-1 bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm"
-                    style={{
+                      style={{
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                         border: '1px solid #e5e7eb'
                     }}
                 >
                     {suggestions.map((city) => (
-                        <Combobox.Option
+                         <Combobox.Option
                             key={city.cityId}
                             value={city}
                             className={({ active }) =>
@@ -84,6 +95,7 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
                             {city.full_name}
                         </Combobox.Option>
                     ))}
+                    {/* Add a "No cities found" message */}
                     {query.length >= 2 && suggestions.length === 0 && (
                         <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
                             No cities found.
