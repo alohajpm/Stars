@@ -1,7 +1,7 @@
 // /src/app/page.tsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import CitySearchDropdown from '../components/CitySearchDropdown';
 
 interface ChartData {
@@ -25,9 +25,7 @@ const HomePage = () => {
     const [error, setError] = useState<string>("");
     const [chartImage, setChartImage] = useState<string | null>(null);
 
-    // No need for formRef anymore
-
-    const cityInputValue = selectedCity ? `${selectedCity.name}, ${selectedCity.stateCode}` : "";
+    // No longer needed: const cityInputValue = selectedCity ? `${selectedCity.name}, ${selectedCity.stateCode}` : "";
 
     useEffect(() => {
         // Clear selectedCity if birthDate or birthTime changes
@@ -37,8 +35,7 @@ const HomePage = () => {
     }, [birthDate, birthTime]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault(); // Standard form prevention
-        // e.stopPropagation();  // No longer needed
+        e.preventDefault();
 
         setLoading(true);
         setError("");
@@ -62,12 +59,10 @@ const HomePage = () => {
         }
 
         const place = `${selectedCity.name}, ${selectedCity.stateCode}`;
-
-       await fetchData(birthDate, birthTime, place);
-
+        await fetchData(birthDate, birthTime, place); // Call fetchData directly
     };
 
-    const fetchData = async (birthDate: string, birthTime: string, place: string) => {
+     const fetchData = async (birthDate: string, birthTime: string, place: string) => {
         try {
             // 1. Calculate Positions
             const positionsRes = await fetch("/api/calculate-positions", {
@@ -115,6 +110,7 @@ const HomePage = () => {
     }
 
     const handleGenerateChart = async (positions?: any) => {
+       // ... (handleGenerateChart remains the same) ...
         const positionsToUse = positions || chartData?.calculated_positions;
 
         if (!positionsToUse) {
@@ -150,6 +146,7 @@ const HomePage = () => {
     };
 
     const ExpandableSection = ({ title, content }: { title: React.ReactNode; content: string }) => {
+       // ... (ExpandableSection remains the same) ...
         const [expanded, setExpanded] = useState(false);
 
         return (
@@ -177,6 +174,7 @@ const HomePage = () => {
     };
 
     const AstrologyBackground = () => (
+       // ... (AstrologyBackground remains the same) ...
         <div className="fixed inset-0 z-[-1]">
             <div className="absolute inset-0 bg-gradient-to-b from-indigo-900 via-blue-900 to-black" />
             <div
@@ -190,7 +188,8 @@ const HomePage = () => {
     );
 
     if (chartData) {
-       return (
+       // ... (chartData display remains the same) ...
+        return (
             <div className="max-w-4xl mx-auto p-8">
                 <AstrologyBackground />
                 <div className="bg-white/95 backdrop-blur-sm shadow-xl rounded-lg">
@@ -261,7 +260,6 @@ const HomePage = () => {
                                 <p className="text-red-700">{error}</p>
                             </div>
                         )}
-                        {/* Removed ref={formRef} */}
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-2">
                                 <label
@@ -299,13 +297,14 @@ const HomePage = () => {
                             </div>
 
                             <div className="space-y-2">
-                                 <label htmlFor="place" className="block text-sm font-medium text-gray-700 subheading">
-                                      Place of Birth
-                                 </label>
-                                 <CitySearchDropdown
-                                    onSelect={(city) => setSelectedCity(city)}
-                                    value={cityInputValue}
-                                 />
+                                <label htmlFor="place" className="block text-sm font-medium text-gray-700 subheading">
+                                     Place of Birth
+                                </label>
+                                <CitySearchDropdown
+                                    onSelect={setSelectedCity} // Simplified onSelect
+                                    placeholder="Enter City, State"
+                                    // No value prop needed!
+                                />
                             </div>
 
                             <button
