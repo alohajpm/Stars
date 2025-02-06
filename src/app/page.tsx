@@ -306,9 +306,8 @@ const HomePage = () => {
                                       Place of Birth
                                  </label>
                                  <CitySearchDropdown
-                                    onSelect={setSelectedCity} // Simplified onSelect
+                                    onSelect={setSelectedCity} // Correct
                                     placeholder="Enter City, State"
-                                    // No value prop needed!
                                 />
                             </div>
 
