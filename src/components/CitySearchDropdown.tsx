@@ -6,6 +6,7 @@ interface City {
     name: string;
     stateCode: string;
     full_name: string;
+    cityId: string; // Add cityId
     location: { latitude: number; longitude: number };
 }
 
@@ -94,7 +95,7 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
                 <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
                     {suggestions.map((city) => (
                         <li
-                            key={city.id}
+                            key={city.cityId} // Use cityId as the key
                             onClick={() => handleSelect(city)}
                             className="px-4 py-2 cursor-pointer hover:bg-gray-100"
                         >
