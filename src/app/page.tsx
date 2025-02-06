@@ -1,7 +1,7 @@
 // /src/app/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // Import useRef
 import CitySearchDropdown from '../components/CitySearchDropdown';
 
 interface ChartData {
@@ -25,100 +25,109 @@ const HomePage = () => {
     const [error, setError] = useState<string>("");
     const [chartImage, setChartImage] = useState<string | null>(null);
 
-     const cityInputValue = selectedCity ? `${selectedCity.name}, ${selectedCity.stateCode}` : "";
+    const formRef = useRef<HTMLFormElement>(null); // Create a ref for the form
 
+    const cityInputValue = selectedCity ? `${selectedCity.name}, ${selectedCity.stateCode}` : "";
 
-     useEffect(() => {
-        // Clear selectedCity if birthDate or birthTime changes
+    useEffect(() => {
         if (birthDate || birthTime) {
             setSelectedCity(null);
         }
     }, [birthDate, birthTime]);
 
-
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        e.stopPropagation(); // VERY IMPORTANT: Prevent immediate form submission
         console.log("Form submitted!");
 
-        setLoading(true);
-        setError("");
-        setChartData(null);
-        setChartImage(null);
+        // NO CHANGES INSIDE handleSubmit *except* wrapping the logic in a setTimeout
+        setTimeout(() => {
 
-        console.log("Form data:", { birthDate, birthTime, selectedCity });
+            setLoading(true);
+            setError("");
+            setChartData(null);
+            setChartImage(null);
 
-        if (!birthDate) {
-            setError("Birth Date is required.");
-            setLoading(false);
-            return;
-        }
-        if (!birthTime) {
-            setError("Birth Time is required.");
-            setLoading(false);
-            return;
-        }
-        if (!selectedCity) {
-            setError("Please select a valid place of birth.");
-            setLoading(false);
-            return;
-        }
+            console.log("Form data:", { birthDate, birthTime, selectedCity });
 
-        const place = `${selectedCity.name}, ${selectedCity.stateCode}`;
-        console.log("Place:", place);
-
-        try {
-            // 1. Calculate Positions
-            const positionsRes = await fetch("/api/calculate-positions", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ birthDate, birthTime, place }),
-            });
-
-            console.log("Positions API response status:", positionsRes.status);
-
-            if (!positionsRes.ok) {
-                const errorData = await positionsRes.json().catch(() => ({}));
-                console.error("Positions API error:", errorData);
-                const errorMessage = errorData.error || errorData.details || "Failed to calculate positions";
-                throw new Error(errorMessage);
+            if (!birthDate) {
+                setError("Birth Date is required.");
+                setLoading(false);
+                return;
+            }
+            if (!birthTime) {
+                setError("Birth Time is required.");
+                setLoading(false);
+                return;
+            }
+            if (!selectedCity) {
+                setError("Please select a valid place of birth.");
+                setLoading(false);
+                return;
             }
 
-            const positionsData = await positionsRes.json();
-            console.log("Received positions:", positionsData);
+            const place = `${selectedCity.name}, ${selectedCity.stateCode}`;
+            console.log("Place:", place);
 
-            // 2. Generate Interpretation
-            const interpretationRes = await fetch("/api/generate-interpretation", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ positions: positionsData }),
-            });
+            const fetchData = async () => { // Moved fetch logic inside a function
+                try {
+                // 1. Calculate Positions
+                const positionsRes = await fetch("/api/calculate-positions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ birthDate, birthTime, place }),
+                });
 
-            console.log("Interpretation API response status:", interpretationRes.status);
+                console.log("Positions API response status:", positionsRes.status);
 
-            if (!interpretationRes.ok) {
-                const errorData = await interpretationRes.json().catch(() => ({}));
-                console.error("Interpretation API error:", errorData);
-                const errorMessage = errorData.error || errorData.details || "Failed to generate interpretation";
-                throw new Error(errorMessage);
+                if (!positionsRes.ok) {
+                    const errorData = await positionsRes.json().catch(() => ({}));
+                    console.error("Positions API error:", errorData);
+                    const errorMessage = errorData.error || errorData.details || "Failed to calculate positions";
+                    throw new Error(errorMessage);
+                }
+
+                const positionsData = await positionsRes.json();
+                console.log("Received positions:", positionsData);
+
+                // 2. Generate Interpretation
+                const interpretationRes = await fetch("/api/generate-interpretation", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ positions: positionsData }),
+                });
+
+                console.log("Interpretation API response status:", interpretationRes.status);
+
+                if (!interpretationRes.ok) {
+                    const errorData = await interpretationRes.json().catch(() => ({}));
+                    console.error("Interpretation API error:", errorData);
+                    const errorMessage = errorData.error || errorData.details || "Failed to generate interpretation";
+                    throw new Error(errorMessage);
+                }
+
+                const interpretationData = await interpretationRes.json();
+                interpretationData.calculated_positions = positionsData;
+                console.log("Received interpretation:", interpretationData);
+                setChartData(interpretationData);
+
+                // 3. Generate Chart Image
+
+                await handleGenerateChart(positionsData);
+            } catch(error) {
+                console.error("Error in handleSubmit:", error);
+                setError(error instanceof Error ? error.message : "An unexpected error occurred");
+            } finally {
+                setLoading(false);
             }
-
-            const interpretationData = await interpretationRes.json();
-            interpretationData.calculated_positions = positionsData;
-            console.log("Received interpretation:", interpretationData);
-            setChartData(interpretationData);
-
-            // 3. Generate Chart Image
-            await handleGenerateChart(positionsData);
-
-        } catch (error) {
-            console.error("Error in handleSubmit:", error);
-            setError(error instanceof Error ? error.message : "An unexpected error occurred");
-        } finally {
-            setLoading(false);
         }
+        fetchData(); // Call the function that performs the fetch
+    }, 0); // Delay execution, allowing state to update
+
     };
 
     const handleGenerateChart = async (positions?: any) => {
+        // ... (handleGenerateChart remains the same) ...
         const positionsToUse = positions || chartData?.calculated_positions;
 
         if (!positionsToUse) {
@@ -194,7 +203,7 @@ const HomePage = () => {
     );
 
 
-     if (chartData) {
+   if (chartData) {
        return (
             <div className="max-w-4xl mx-auto p-8">
                 <AstrologyBackground />
@@ -266,7 +275,7 @@ const HomePage = () => {
                                 <p className="text-red-700">{error}</p>
                             </div>
                         )}
-                        <form onSubmit={handleSubmit} className="space-y-6">
+                        <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-2">
                                 <label
                                     htmlFor="birthDate"
@@ -307,10 +316,14 @@ const HomePage = () => {
                                       Place of Birth
                                  </label>
                                  <CitySearchDropdown
-                                    onSelect={(city) => {
+                                      onSelect={(city) => {
                                         console.log("page.tsx: City selected:", city); // VERY IMPORTANT LOG
                                         setSelectedCity(city);
-                                    }}
+                                         // Trigger form submission *after* state update
+                                        if (formRef.current) {
+                                            formRef.current.dispatchEvent(new Event('submit', {bubbles: true, cancelable: true}))
+                                        }
+                                      }}
                                     value={cityInputValue}
                                  />
                             </div>
