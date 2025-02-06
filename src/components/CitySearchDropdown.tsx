@@ -59,11 +59,18 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
         setQuery(city.full_name); // Keep the input field updated
         onSelect(selectedCity);
     };
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setQuery(e.target.value)
+       if (e.target.value.length < 2) {
+            setSuggestions([]);
+            onSelect({ name: "", stateCode: "", lat: 0, lng: 0 }); // Clear selection
+        }
+    }
 
     return (
         <Combobox value={suggestions.find(city => city.full_name === query) ?? null} onChange={handleSelect}>
             <Combobox.Input
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={handleInputChange}
                 placeholder={placeholder}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
                 autoComplete="off"
