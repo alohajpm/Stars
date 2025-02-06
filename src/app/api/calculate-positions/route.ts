@@ -9,11 +9,11 @@ export const config = {
             sizeLimit: '1mb',
         },
     },
-    runtime: 'nodejs', // Add this line.  Very Important
+    runtime: 'nodejs',
     maxDuration: 300,
 };
 
-
+// State Timezones (Remains the same)
 const stateTimezones: { [key: string]: string } = {
     'AK': 'America/Anchorage',
     'AL': 'America/Chicago',
@@ -68,14 +68,81 @@ const stateTimezones: { [key: string]: string } = {
     'WY': 'America/Denver'
 };
 
+// State Code Mapping (NEW - Full Name to Two-Letter Code)
+const stateCodeMapping: { [key: string]: string } = {
+    'alabama': 'AL',
+    'alaska': 'AK',
+    'arizona': 'AZ',
+    'arkansas': 'AR',
+    'california': 'CA',
+    'colorado': 'CO',
+    'connecticut': 'CT',
+    'delaware': 'DE',
+    'district of columbia': 'DC',
+    'florida': 'FL',
+    'georgia': 'GA',
+    'hawaii': 'HI',
+    'idaho': 'ID',
+    'illinois': 'IL',
+    'indiana': 'IN',
+    'iowa': 'IA',
+    'kansas': 'KS',
+    'kentucky': 'KY',
+    'louisiana': 'LA',
+    'maine': 'ME',
+    'maryland': 'MD',
+    'massachusetts': 'MA',
+    'michigan': 'MI',
+    'minnesota': 'MN',
+    'mississippi': 'MS',
+    'missouri': 'MO',
+    'montana': 'MT',
+    'nebraska': 'NE',
+    'nevada': 'NV',
+    'new hampshire': 'NH',
+    'new jersey': 'NJ',
+    'new mexico': 'NM',
+    'new york': 'NY',
+    'north carolina': 'NC',
+    'north dakota': 'ND',
+    'ohio': 'OH',
+    'oklahoma': 'OK',
+    'oregon': 'OR',
+    'pennsylvania': 'PA',
+    'rhode island': 'RI',
+    'south carolina': 'SC',
+    'south dakota': 'SD',
+    'tennessee': 'TN',
+    'texas': 'TX',
+    'utah': 'UT',
+    'vermont': 'VT',
+    'virginia': 'VA',
+    'washington': 'WA',
+    'west virginia': 'WV',
+    'wisconsin': 'WI',
+    'wyoming': 'WY',
+    'american samoa': 'AS',
+    'guam': 'GU',
+    'northern mariana islands': 'MP',
+    'puerto rico': 'PR',
+    'united states minor outlying islands': 'UM',
+    'virgin islands': 'VI',
+};
+
 
 // --- Helper function to fetch city data from Back4App ---
-async function fetchCityData(city: string, stateCode: string) {
+async function fetchCityData(city: string, stateName: string) { // Changed parameter name
     const appId = process.env.BACK4APP_APPLICATION_ID;
     const jsKey = process.env.BACK4APP_JAVASCRIPT_KEY;
 
     if (!appId || !jsKey) {
         throw new Error("Missing Back4App credentials.  Check your .env.local file.");
+    }
+
+    // Convert full state name to two-letter code (CRITICAL CHANGE)
+    const stateCode = stateCodeMapping[stateName.toLowerCase()];
+    if (!stateCode) {
+        throw new Error(`Invalid state name: ${stateName}`);
     }
 
     const url = `https://parseapi.back4app.com/classes/USA_cities_${stateCode.toUpperCase()}?where=${encodeURIComponent(
@@ -98,7 +165,7 @@ async function fetchCityData(city: string, stateCode: string) {
     const data = await response.json();
 
     if (!data.results || data.results.length === 0) {
-        throw new Error(`City not found: ${city}, ${stateCode}`);
+        throw new Error(`City not found: ${city}, ${stateCode}`); // Use stateCode in error message
     }
   // Sort the results by population (descending) and return the most populated result
     data.results.sort((a:any, b:any) => b.population - a.population);
@@ -124,14 +191,14 @@ async function calculateChartPositions(date: string, time: string, place: string
         console.log('Parsing location:', { city, state });
 
         // Fetch city data from Back4App
-        const cityData = await fetchCityData(city, state);
+        const cityData = await fetchCityData(city, state); // Pass state name
 
         const coordinates = {
             lat: cityData.location.latitude,
             lng: cityData.location.longitude,
         };
 
-        const timezone = stateTimezones[state.toUpperCase()];
+        const timezone = stateTimezones[stateCodeMapping[state.toLowerCase()]]; // Get two-letter code
         if (!timezone) {
             return { error: `Unknown timezone for state: ${state}` };
         }
