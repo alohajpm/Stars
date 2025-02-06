@@ -186,7 +186,7 @@ const HomePage = () => {
             <div
                 className="absolute inset-0 opacity-40 bg-cover bg-center"
                 style={{
-                    backgroundImage: "url('https://onlysnails.com/wp-content/uploads/2025/02/AdobeStock_927783787-scaled.jpeg')",
+                    backgroundImage: "url('https://onlysnails.com/wp-content/uploads/2025/02/AdobeStock_794875557-scaled.jpeg')",
                     backgroundBlendMode: "screen",
                 }}
             />
