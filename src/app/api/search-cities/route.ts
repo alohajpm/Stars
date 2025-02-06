@@ -7,7 +7,7 @@ export async function GET(request: Request) {
         const query = searchParams.get('query');
 
         if (!query) {
-            return NextResponse.json({ results: [] }); // Return empty array for no query
+            return NextResponse.json({ results: [] });
         }
 
         const appId = process.env.BACK4APP_APPLICATION_ID;
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
             throw new Error("Missing Back4App credentials.");
         }
 
-        // Fetch all states from the Back4App database (can be improved with a separate "states" class for efficiency)
+        // Fetch all states (ideally, this would be cached or use a separate class)
         const statesResponse = await fetch('https://parseapi.back4app.com/classes/USA_states', {
             headers: {
                 'X-Parse-Application-Id': appId,
@@ -33,15 +33,15 @@ export async function GET(request: Request) {
 
         let allResults: any[] = [];
 
-        // Perform a search for each State
+        // Iterate through states and query each state's city class
         for (const state of states) {
             const stateCode = state.adminCode;
-
-            const url = `https://parseapi.back4app.com/classes/USA_cities_${stateCode}?where=${encodeURIComponent(
+          const url = `https://parseapi.back4app.com/classes/USA_cities_${stateCode}?where=${encodeURIComponent(
                 JSON.stringify({
-                    name: { "$regex": query, "$options": "i" },  // Case-insensitive partial match
+                    name: { "$regex": query, "$options": "i" },
                 })
-            )}&limit=5`; // Limit to 5 results per state
+            )}&limit=5`;
+
 
             const response = await fetch(url, {
                 headers: {
@@ -51,24 +51,25 @@ export async function GET(request: Request) {
             });
 
             if (!response.ok) {
-                console.error(`Back4App API request failed for state ${stateCode}: ${response.status} ${response.statusText}`);
+                console.error(`Back4App API request failed for ${stateCode}: ${response.status}`);
                 continue; // Skip to the next state on error
             }
 
             const data = await response.json();
-             if (data.results && data.results.length > 0) {
-                // Add state code to each city result for later use.
-                const resultsWithState = data.results.map((city: any) => ({
+            // KEY CHANGE: Access results correctly
+            if (data.results && data.results.length > 0) {
+              const resultsWithState = data.results.map((city: any) => ({
                     ...city,
-                    stateCode: stateCode, // Add the state code here
-                    full_name: `${city.name}, ${stateCode}`,
+                    stateCode: stateCode, // Add stateCode
+                    full_name: `${city.name}, ${stateCode}`, // Construct full_name
+                    cityId: city.objectId,  // Use objectId as cityId
                 }));
-              allResults = allResults.concat(resultsWithState);
-          }
-        }
+              allResults = allResults.concat(resultsWithState)
+            }
 
-      allResults.sort((a:any, b:any) => b.population - a.population);
-      const limitedResults = allResults.slice(0,10); // Limit over all top ten results
+        }
+        allResults.sort((a:any, b:any) => b.population - a.population);
+        const limitedResults = allResults.slice(0,10);
 
         return NextResponse.json({ results: limitedResults });
 
