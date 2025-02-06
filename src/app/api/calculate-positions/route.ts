@@ -70,17 +70,24 @@ const stateTimezones: { [key: string]: string } = {
 
 // --- Helper function to fetch city data from Back4App ---
 async function fetchCityData(city: string, stateCode: string) {
+    console.log("fetchCityData called with:", { city, stateCode }); // LOG 1
+
     const appId = process.env.BACK4APP_APPLICATION_ID;
     const jsKey = process.env.BACK4APP_JAVASCRIPT_KEY;
 
     if (!appId || !jsKey) {
         throw new Error("Missing Back4App credentials.");
     }
-    const url = `https://parseapi.back4app.com/classes/USA_cities_${stateCode.toUpperCase()}?where=${encodeURIComponent(
+
+    // Construct the URL *exactly* as it should be:
+    const url = `https://parseapi.back4app.com/classes/${stateCode}?where=${encodeURIComponent(
         JSON.stringify({
             name: { "$regex": `^${city}$`, "$options": "i" }
         })
     )}`;
+
+    console.log("fetchCityData: Constructed URL:", url); // LOG 2: The exact URL
+
     const response = await fetch(url, {
         headers: {
             'X-Parse-Application-Id': appId,
@@ -88,11 +95,15 @@ async function fetchCityData(city: string, stateCode: string) {
         },
     });
 
+    console.log("fetchCityData: Response Status:", response.status); // LOG 3: HTTP Status
+
     if (!response.ok) {
+        console.error("fetchCityData: Back4App API request failed:", await response.text()); // LOG 4: Full response body
         throw new Error(`Back4App API request failed: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
+    console.log("fetchCityData: Raw Back4App Data:", data); // LOG 5: Raw data
 
     if (!data.results || data.results.length === 0) {
         throw new Error(`City not found: ${city}, ${stateCode}`);
@@ -119,13 +130,12 @@ async function calculateChartPositions(date: string, time: string, place: string
         const [city, stateCode] = place.split(',').map(s => s.trim());
         console.log('Parsing location:', { city, stateCode });
 
-        // *** KEY CHANGE: Handle empty place with a specific error object ***
         if (!city || !stateCode) {
             console.log("City or state code is empty. Returning error.");
-            return { error: "No city selected" }; // Return an error object
+            return { error: "No city selected" };
         }
 
-        const cityData = await fetchCityData(city, stateCode);
+        const cityData = await fetchCityData(city, stateCode); // Await the result
 
         const coordinates = {
             lat: cityData.location.latitude,
@@ -179,15 +189,18 @@ async function calculateChartPositions(date: string, time: string, place: string
         };
 
         Object.entries(planets).forEach(([planet, body]) => {
-			try{
-            	const pos = Astronomy.Equator(body, date_obj, observer, true, true);
-            	const longitude = (pos.ra * 15) % 360;
-            	positions[planet] = getZodiacPosition(longitude);
-			} catch (error) {
+            try {
+                const pos = Astronomy.Equator(body, date_obj, observer, true, true);
+                const longitude = (pos.ra * 15) % 360;
+                positions[planet] = getZodiacPosition(longitude);
+
+            } catch(error){
                 console.error(`Error calculating ${planet} position:`, error);
-                const approxLongitude = (sunLongitude + Object.keys(planets).indexOf(planet) * 30) % 360;
-                positions[planet] = getZodiacPosition(approxLongitude);
+                //approximation
+                const approxLongitude = (sunLongitude + (Object.keys(planets).indexOf(planet) * 30)) % 360;
+                positions[planet] = getZodiacPosition(approxLongitude)
             }
+
         });
 
         console.timeEnd("calculateChartPositions");
@@ -198,6 +211,7 @@ async function calculateChartPositions(date: string, time: string, place: string
         return { error: error instanceof Error ? error.message : 'Unknown error' };
     }
 }
+
 
 export async function POST(request: Request) {
     if (request.method !== 'POST') {
@@ -221,14 +235,14 @@ export async function POST(request: Request) {
         const positions = await calculateChartPositions(birthDate, birthTime, place);
         console.log("/api/calculate-positions: Calculated positions:", positions);
 
-        // *** KEY CHANGE: Handle the 'error' property correctly ***
         if (positions.error) {
-            console.log("/api/calculate-positions: Returning error:", positions.error);
+          console.log("/api/calculate-positions: Returning error:", positions.error);
             return NextResponse.json(
                 { error: 'Failed to calculate chart positions', details: positions.error },
-                { status: 400 } // Return a 400 error, since it's a client input issue
+                { status: 400 } // Use 400 for client errors
             );
         }
+
 
         return NextResponse.json(positions);
 
