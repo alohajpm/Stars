@@ -293,17 +293,15 @@ const HomePage = () => {
                                 />
                             </div>
 
-<div className="space-y-2 relative">
-    <label htmlFor="place" className="block text-sm font-medium text-gray-700 subheading">
-        Place of Birth
-    </label>
-    <div className="relative z-[9999]"> {/* Added high z-index container */}
-        <CitySearchDropdown
-            onSelect={setSelectedCity}
-            placeholder="Enter City, State"
-        />
-    </div>
-</div>
+                            <div className="space-y-2 relative z-20">
+                                <label htmlFor="place" className="block text-sm font-medium text-gray-700 subheading">
+                                    Place of Birth
+                                </label>
+                                <CitySearchDropdown
+                                    onSelect={setSelectedCity}
+                                    placeholder="Enter City, State"
+                                />
+                            </div>
 
                             <button
                                 type="submit"
