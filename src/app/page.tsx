@@ -1,7 +1,8 @@
-// /src/app/api/page.tsx
+// /src/app/page.tsx
 "use client";
 
 import { useState } from "react";
+import CitySearchDropdown from '../components/CitySearchDropdown'; // Import the new component
 
 interface ChartData {
     summary: string;
@@ -18,7 +19,7 @@ interface ChartData {
 const HomePage = () => {
     const [birthDate, setBirthDate] = useState("");
     const [birthTime, setBirthTime] = useState("");
-    const [place, setPlace] = useState("");
+    const [selectedCity, setSelectedCity] = useState<{ name: string, stateCode: string, lat: number, lng: number } | null>(null); // Store selected city
     const [chartData, setChartData] = useState<ChartData | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string>("");
@@ -28,10 +29,9 @@ const HomePage = () => {
         e.preventDefault();
         setLoading(true);
         setError("");
-        setChartData(null);  // Reset previous data
-        setChartImage(null); // Reset previous image
+        setChartData(null);
+        setChartImage(null);
 
-          // Basic Client-Side Validation (Add more as needed)
         if (!birthDate) {
             setError("Birth Date is required.");
             setLoading(false);
@@ -42,15 +42,15 @@ const HomePage = () => {
             setLoading(false);
             return;
         }
-        if (!place) {
-            setError("Place of Birth is required.");
+        if (!selectedCity) {
+            setError("Please select a valid place of birth."); // Updated error message
             setLoading(false);
             return;
         }
 
+        const place = `${selectedCity.name}, ${selectedCity.stateCode}`; // Use selected city data
 
         try {
-            // 1. Calculate Positions
             const positionsRes = await fetch("/api/calculate-positions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -66,7 +66,6 @@ const HomePage = () => {
             const positionsData = await positionsRes.json();
             console.log("Received positions:", positionsData);
 
-            // 2. Generate Interpretation
             const interpretationRes = await fetch("/api/generate-interpretation", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -82,14 +81,10 @@ const HomePage = () => {
 
 
             const interpretationData = await interpretationRes.json();
-
-            // Add the calculated positions to the interpretation data
             interpretationData.calculated_positions = positionsData;
-
             console.log("Received interpretation:", interpretationData);
             setChartData(interpretationData);
 
-            // 3. Generate Chart Image
             await handleGenerateChart(positionsData);
 
         } catch (error) {
@@ -129,7 +124,6 @@ const HomePage = () => {
             setError(error instanceof Error ? error.message : "Failed to generate chart image");
         }
     };
-
     const ExpandableSection = ({ title, content }: { title: React.ReactNode; content: string }) => {
         const [expanded, setExpanded] = useState(false);
 
@@ -147,7 +141,7 @@ const HomePage = () => {
                     </span>
                 </div>
                 {expanded && (
-                    <div className="p-4 bg-white"> {/* Removed extra class */}
+                    <div className="p-4 bg-white">
                         <p className="body-text leading-relaxed">
                             {content}
                         </p>
@@ -225,94 +219,88 @@ const HomePage = () => {
     }
 
     return (
-      <div className="min-h-screen py-12 px-4">
-          <AstrologyBackground />
-          <div className="max-w-xl mx-auto">
-              <div className="bg-white/90 backdrop-blur-sm shadow-xl rounded-lg">
-                  <div className="p-8">
-                      <h1 className="heading text-3xl text-center mb-8 text-blue-900">
-                          Discover Your Astrological Chart
-                      </h1>
-                      {error && (
-                          <div className="p-4 mb-6 bg-red-50 border border-red-200 rounded-lg">
-                              <p className="text-red-700">{error}</p>
-                          </div>
-                      )}
-                      <form onSubmit={handleSubmit} className="space-y-6">
-                          <div className="space-y-2">
-                              <label
-                                  htmlFor="birthDate"
-                                  className="block text-sm font-medium text-gray-700 subheading"
-                              >
-                                  Birth Date
-                              </label>
-                              <input
-                                  type="date"
-                                  id="birthDate"
-                                  value={birthDate}
-                                  onChange={(e) => setBirthDate(e.target.value)}
-                                  required
-                                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                              />
-                          </div>
+        <div className="min-h-screen py-12 px-4">
+            <AstrologyBackground />
+            <div className="max-w-xl mx-auto">
+                <div className="bg-white/90 backdrop-blur-sm shadow-xl rounded-lg">
+                    <div className="p-8">
+                        <h1 className="heading text-3xl text-center mb-8 text-blue-900">
+                            Discover Your Astrological Chart
+                        </h1>
+                        {error && (
+                            <div className="p-4 mb-6 bg-red-50 border border-red-200 rounded-lg">
+                                <p className="text-red-700">{error}</p>
+                            </div>
+                        )}
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="space-y-2">
+                                <label
+                                    htmlFor="birthDate"
+                                    className="block text-sm font-medium text-gray-700 subheading"
+                                >
+                                    Birth Date
+                                </label>
+                                <input
+                                    type="date"
+                                    id="birthDate"
+                                    value={birthDate}
+                                    onChange={(e) => setBirthDate(e.target.value)}
+                                    required
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                                />
+                            </div>
 
-                          <div className="space-y-2">
-                              <label
-                                  htmlFor="birthTime"
-                                  className="block text-sm font-medium text-gray-700 subheading"
-                              >
-                                  Birth Time
-                              </label>
-                              <input
-                                  type="time"
-                                  id="birthTime"
-                                  value={birthTime}
-                                  onChange={(e) => setBirthTime(e.target.value)}
-                                  required
-                                  style={{ colorScheme: "light" }}
-                                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                              />
-                          </div>
+                            <div className="space-y-2">
+                                <label
+                                    htmlFor="birthTime"
+                                    className="block text-sm font-medium text-gray-700 subheading"
+                                >
+                                    Birth Time
+                                </label>
+                                <input
+                                    type="time"
+                                    id="birthTime"
+                                    value={birthTime}
+                                    onChange={(e) => setBirthTime(e.target.value)}
+                                    required
+                                    style={{ colorScheme: "light" }}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                                />
+                            </div>
 
-                          <div className="space-y-2">
-                              <label
-                                  htmlFor="place"
-                                  className="block text-sm font-medium text-gray-700 subheading"
-                              >
-                                  Place of Birth
-                              </label>
-                              <input
-                                  type="text"
-                                  id="place"
-                                  placeholder="City, State"
-                                  value={place}
-                                  onChange={(e) => setPlace(e.target.value)}
-                                  required
-                                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                              />
-                          </div>
+                            <div className="space-y-2">
+                                <label
+                                    htmlFor="place"
+                                    className="block text-sm font-medium text-gray-700 subheading"
+                                >
+                                    Place of Birth
+                                </label>
+                                <CitySearchDropdown
+                                    onSelect={(city) => setSelectedCity(city)}
+                                />
+                            </div>
 
-                          <button
-                              type="submit"
-                              disabled={loading}
-                              className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
-                          >
-                              {loading ? (
-                                  <>
-                                      <span className="animate-spin mr-2">
-                                          ⭐
-                                      </span>
-                                      Creating Your Chart...
-                                  </>
-                              ) : (
-                                  "Get My Chart"
-                              )}
-                          </button>
-                      </form>
-                  </div>
-              </div>
-          </div>
-      </div>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                            >
+                                {loading ? (
+                                    <>
+                                        <span className="animate-spin mr-2">
+                                            ⭐
+                                        </span>
+                                        Creating Your Chart...
+                                    </>
+                                ) : (
+                                    "Get My Chart"
+                                )}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
 
