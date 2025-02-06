@@ -65,9 +65,10 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
         }
     }
 
+
     return (
-        // KEY CHANGE: Apply classes directly to Combobox
-        <Combobox className="relative w-full" value={suggestions.find(city => city.full_name === query) ?? null} onChange={handleSelect}>
+        // REMOVE className from Combobox
+        <Combobox value={suggestions.find(city => city.full_name === query) ?? null} onChange={handleSelect}>
             <Combobox.Input
                 onChange={handleInputChange}
                 placeholder={placeholder}
@@ -83,17 +84,17 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
                 }}
             >
                 {suggestions.map((city) => (
-                    <Combobox.Option
-                        key={city.cityId}
-                        value={city}
-                        className={({ active }) =>
-                            `relative cursor-default select-none py-2 pl-3 pr-9 ${
-                                active ? 'bg-blue-600 text-white' : 'text-gray-900'
-                            }`
-                        }
-                    >
-                        {city.full_name}
-                    </Combobox.Option>
+                        <Combobox.Option
+                            key={city.cityId}
+                            value={city}
+                            className={({ active }) =>
+                                `relative cursor-default select-none py-2 pl-3 pr-9 ${
+                                    active ? 'bg-blue-600 text-white' : 'text-gray-900'
+                                }`
+                            }
+                        >
+                            {city.full_name}
+                        </Combobox.Option>
                 ))}
                 {query.length >= 2 && suggestions.length === 0 && (
                     <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
