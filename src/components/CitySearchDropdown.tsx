@@ -56,43 +56,45 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
     };
 
     return (
-        <div className="relative w-full">
-            <div className="relative">
-                <Combobox value={suggestions.find(city => city.full_name === query) ?? null} onChange={handleSelect}>
-                    <div className="relative">
-                        <Combobox.Input
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder={placeholder}
-                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                            displayValue={(city: City | null) => city?.full_name ?? query}
-                        />
-                        <div className="fixed inset-0 z-40" style={{ pointerEvents: suggestions.length > 0 ? 'auto' : 'none', background: 'transparent' }} />
-                        <div className="absolute w-full z-50">
-                            <Combobox.Options className="absolute w-full mt-1 bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
-                                {suggestions.map((city) => (
-                                    <Combobox.Option
-                                        key={city.cityId}
-                                        value={city}
-                                        className={({ active }) =>
-                                            `cursor-default select-none relative py-2 pl-3 pr-9 ${
-                                                active ? 'text-white bg-blue-600' : 'text-gray-900'
-                                            }`
-                                        }
-                                    >
-                                        {city.full_name}
-                                    </Combobox.Option>
-                                ))}
-                                {query.length >= 2 && suggestions.length === 0 && (
-                                    <div className="cursor-default select-none relative py-2 pl-3 pr-9 text-gray-700">
-                                        No cities found.
-                                    </div>
+        <Combobox value={suggestions.find(city => city.full_name === query) ?? null} onChange={handleSelect}>
+            <div className="relative mt-1">
+                <Combobox.Input
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={placeholder}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                    displayValue={(city: City | null) => city?.full_name ?? query}
+                />
+
+                {suggestions.length > 0 && (
+                    <Combobox.Options static className="absolute w-full py-1 mt-1 overflow-auto text-base bg-white rounded-md shadow-lg max-h-60 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm" style={{ zIndex: 9999 }}>
+                        {suggestions.map((city) => (
+                            <Combobox.Option
+                                key={city.cityId}
+                                value={city}
+                                className={({ active }) =>
+                                    `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                                        active ? 'text-white bg-blue-600' : 'text-gray-900'
+                                    }`
+                                }
+                            >
+                                {({ selected, active }) => (
+                                    <>
+                                        <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
+                                            {city.full_name}
+                                        </span>
+                                        {selected && (
+                                            <span className={`absolute inset-y-0 left-0 flex items-center pl-3 ${active ? 'text-white' : 'text-blue-600'}`}>
+                                                ✓
+                                            </span>
+                                        )}
+                                    </>
                                 )}
-                            </Combobox.Options>
-                        </div>
-                    </div>
-                </Combobox>
+                            </Combobox.Option>
+                        ))}
+                    </Combobox.Options>
+                )}
             </div>
-        </div>
+        </Combobox>
     );
 };
 
