@@ -25,8 +25,6 @@ const HomePage = () => {
     const [error, setError] = useState<string>("");
     const [chartImage, setChartImage] = useState<string | null>(null);
 
-    // No longer needed: const cityInputValue = selectedCity ? `${selectedCity.name}, ${selectedCity.stateCode}` : "";
-
     useEffect(() => {
         // Clear selectedCity if birthDate or birthTime changes
         if (birthDate || birthTime) {
@@ -110,7 +108,6 @@ const HomePage = () => {
     }
 
     const handleGenerateChart = async (positions?: any) => {
-       // ... (handleGenerateChart remains the same) ...
         const positionsToUse = positions || chartData?.calculated_positions;
 
         if (!positionsToUse) {
@@ -146,7 +143,6 @@ const HomePage = () => {
     };
 
     const ExpandableSection = ({ title, content }: { title: React.ReactNode; content: string }) => {
-       // ... (ExpandableSection remains the same) ...
         const [expanded, setExpanded] = useState(false);
 
         return (
@@ -174,7 +170,6 @@ const HomePage = () => {
     };
 
     const AstrologyBackground = () => (
-       // ... (AstrologyBackground remains the same) ...
         <div className="fixed inset-0 z-[-1]">
             <div className="absolute inset-0 bg-gradient-to-b from-indigo-900 via-blue-900 to-black" />
             <div
