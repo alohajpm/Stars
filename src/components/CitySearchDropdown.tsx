@@ -66,7 +66,6 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
             onSelect({ name: "", stateCode: "", lat: 0, lng: 0 }); // Clear selection
         }
     }
-
     return (
         <Combobox value={suggestions.find(city => city.full_name === query) ?? null} onChange={handleSelect}>
             <Combobox.Input
@@ -75,7 +74,8 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
                 autoComplete="off"
             />
-            <Combobox.Options className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+            {/* KEY STYLING FIXES ARE HERE: */}
+            <Combobox.Options className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
                 {suggestions.map((city) => (
                     <Combobox.Option
                         key={city.cityId}
@@ -88,22 +88,14 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
                     >
                         {({ selected, active }) => (
                             <>
-                <span
-                  className={`block truncate ${
-                    selected ? 'font-medium' : 'font-normal'
-                  }`}
-                >
-                  {city.full_name}
-                </span>
-                                {selected ? (
-                                    <span
-                                        className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
-                                            active ? 'text-white' : 'text-blue-600'
-                                        }`}
-                                    >
-
-                  </span>
-                                ) : null}
+                                <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
+                                    {city.full_name}
+                                </span>
+                                {selected && (
+                                    <span className={`absolute inset-y-0 left-0 flex items-center pl-3 ${active ? 'text-white' : 'text-blue-600'}`}>
+                                        {/* Add a checkmark icon here if you want */}
+                                    </span>
+                                )}
                             </>
                         )}
                     </Combobox.Option>
