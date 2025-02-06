@@ -59,6 +59,7 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
         setQuery(city.full_name); // Keep the input field updated
         onSelect(selectedCity);
     };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       setQuery(e.target.value)
        if (e.target.value.length < 2) {
@@ -67,10 +68,11 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
         }
     }
 
+
     return (
-        // KEY CHANGE: Add a wrapper div with position: relative
+        // Wrapper div for positioning is still crucial!
         <div className="relative w-full">
-            <Combobox value={suggestions.find(c => c.full_name === query) ?? null} onChange={handleSelect}>
+            <Combobox value={suggestions.find(city => city.full_name === query) ?? null} onChange={handleSelect}>
                 <Combobox.Input
                     onChange={handleInputChange}
                     placeholder={placeholder}
@@ -78,6 +80,7 @@ const CitySearchDropdown: React.FC<CitySearchDropdownProps> = ({ onSelect, place
                     autoComplete="off"
                     displayValue={(city: City | null) => city ? city.full_name : ""}
                 />
+                {/* REMOVE conditional rendering: {isOpen && ...} */}
                 <Combobox.Options className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
                     {suggestions.map((city) => (
                         <Combobox.Option
