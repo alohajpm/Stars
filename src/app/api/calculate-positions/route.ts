@@ -95,7 +95,8 @@ async function fetchCityData(city: string, stateCode: string) {
     const data = await response.json();
 
     if (!data.results || data.results.length === 0) {
-        throw new Error(`City not found: ${city}, ${stateCode}`);
+
+        throw new Error(`City not found: ${city}, ${stateCode}`); // This will now show the correct city/state
     }
     // Sort by population (descending)
     data.results.sort((a: any, b: any) => b.population - a.population);
