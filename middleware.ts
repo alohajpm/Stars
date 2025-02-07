@@ -1,33 +1,32 @@
-// middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // Only apply to /api/ paths
+  // Only affect /api routes
   if (request.nextUrl.pathname.startsWith('/api/')) {
+    // If the method is OPTIONS, return a preflight response
     if (request.method === 'OPTIONS') {
-      // Preflight
       return new NextResponse(null, {
         status: 200,
         headers: {
-          'Access-Control-Allow-Origin': '*', // or "http://localhost:19006"
-          'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+          'Access-Control-Allow-Origin': '*', 
+          'Access-Control-Allow-Methods': 'GET,POST,OPTIONS,PUT,PATCH,DELETE',
           'Access-Control-Allow-Headers': '*',
         },
       });
     }
 
-    // Normal GET/POST requests also need the header
+    // For normal GET/POST, also set CORS
     const response = NextResponse.next();
-    response.headers.set('Access-Control-Allow-Origin', '*'); // or specific domain
+    response.headers.set('Access-Control-Allow-Origin', '*');
     return response;
   }
 
-  // For other routes, just continue
+  // For other (non /api) routes
   return NextResponse.next();
 }
 
-// So that only /api routes get it:
+// Ensure the matcher includes /api:
 export const config = {
   matcher: ['/api/:path*'],
 };
